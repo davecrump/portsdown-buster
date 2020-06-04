@@ -3007,24 +3007,23 @@ void ChangeRTLppm()
  
 int DetectLimeNETMicro()
 {
-  char shell_command[127];
-  FILE * shell;
-  strcpy(shell_command, "cat /proc/device-tree/model | grep 'Raspberry Pi Compute Module 3'");
-  shell = popen(shell_command, "r");
-  int r = pclose(shell);
-  if (WEXITSTATUS(r) == 0)
+  int r;
+
+  r = WEXITSTATUS(system("cat /proc/device-tree/model | grep 'Raspberry Pi Compute Module 3'"));
+
+  if (r == 0)
   {
     printf("LimeNET Micro detected\n");
     return 1;
   }
-  else if (WEXITSTATUS(r) == 1)
+  else if (r == 1)
   {
     printf("LimeNET Micro not detected\n");
     return 0;
   } 
   else 
   {
-    printf("LimeNET Micro unexpected exit status %d\n", WEXITSTATUS(r));
+    printf("LimeNET Micro unexpected exit status %d\n", r);
     return 2;
   }
 }
