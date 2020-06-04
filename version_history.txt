@@ -1,3 +1,9 @@
+202006070
+Switch default audio output from Menu 3
+EasyCap Comp Video display with audio
+C920 audio available in Comp Vid out TX mode
+PTT pin set for LimeDVB TX modes when selected from console
+
 202005110
 Improve EasyCap audio
 
