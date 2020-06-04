@@ -46,7 +46,13 @@ fi
 
 # Send audio to the correct port
 if [ "$AUDIO_OUT" == "rpi" ]; then
-  AUDIO_DEVICE="hw:CARD=ALSA,DEV=0"
+  # Check for latest Buster update
+  aplay -l | grep -q 'bcm2835 Headphones'
+  if [ $? == 0 ]; then
+    AUDIO_DEVICE="hw:CARD=Headphones,DEV=0"
+  else
+    AUDIO_DEVICE="hw:CARD=ALSA,DEV=0"
+  fi
 else
   AUDIO_DEVICE="hw:CARD=Device,DEV=0"
 fi
@@ -69,7 +75,7 @@ fi
 sudo killall longmynd >/dev/null 2>/dev/null
 sudo killall vlc >/dev/null 2>/dev/null
 
-sudo rm longmynd_main_ts
+sudo rm longmynd_main_ts >/dev/null 2>/dev/null
 mkfifo longmynd_main_ts
 
 sudo /home/pi/longmynd/longmynd -s longmynd_status_fifo $VOLTS_CMD $INPUT_CMD $FREQ_KHZ $SYMBOLRATEK &
