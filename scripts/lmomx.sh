@@ -125,7 +125,7 @@ mkfifo longmynd_main_ts
 
 sudo /home/pi/longmynd/longmynd -s longmynd_status_fifo $VOLTS_CMD $INPUT_CMD $FREQ_KHZ $SYMBOLRATEK &
 
-omxplayer --adev alsa:plughw:"$AUDIO_OUT_DEV",0 \
+omxplayer --vol 600 --adev alsa:plughw:"$AUDIO_OUT_DEV",0 \
   --live --layer 6 longmynd_main_ts &             ## works for touchscreens
 
 #omxplayer --adev alsa:plughw:"$AUDIO_OUT_DEV",0 --live --display 5 --layer 10 longmynd_main_ts &  ## for HDMI

@@ -388,7 +388,6 @@ echo "--------------------------------------------"
 echo "----- Installing the LongMynd Receiver -----"
 echo "--------------------------------------------"
 cd /home/pi
-rm -rf longmynd
 cp -r /home/pi/rpidatv/src/longmynd/ /home/pi/
 cd longmynd
 make
