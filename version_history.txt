@@ -1,3 +1,12 @@
+202007010
+Add vlc with ffmpeg receive player
+Overlay of parameters on vlc ffmpeg
+Enabled MER display for DVB-S reception
+Large MER on UDP player page
+Receive freq entered and displayed in MHz
+Bugfix intermittent stream display fault
+Bugfix tuner power control
+
 202006070
 Switch default audio output from Menu 3
 EasyCap Comp Video display with audio
