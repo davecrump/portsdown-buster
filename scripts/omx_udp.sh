@@ -56,9 +56,13 @@ echo "The RPi Jack Audio Card number is -"$RPIJ_AUDIO_DEV"-"
 USBOUT_AUDIO_DEV="$(aplay -l 2> /dev/null | grep 'USB Audio Device' | cut -c6-6)"
 
 if [ "$USBOUT_AUDIO_DEV" == '' ]; then
-  printf "USB Dongle audio device was not found, setting to 1\n"
-  USBOUT_AUDIO_DEV="1"
+  printf "USB Dongle audio device was not found, setting to RPi Jack\n"
+  USBOUT_AUDIO_DEV=$RPIJ_AUDIO_DEV
 fi
+
+# Take only the first character
+USBOUT_AUDIO_DEV="$(echo $USBOUT_AUDIO_DEV | cut -c1-1)"
+
 echo "The USB Dongle Audio Card number is -"$USBOUT_AUDIO_DEV"-"
 
 ############ CHOOSE THE AUDIO OUTPUT DEVICE #############################
@@ -76,7 +80,7 @@ echo "The Selected Audio Card number is -"$AUDIO_OUT_DEV"-"
 
 ###########################################################################
 
-stdbuf -oL omxplayer --video_queue 0.5 --timeout 5 --adev alsa:plughw:"$AUDIO_OUT_DEV",0 udp://:@:10000 2>/dev/null | {
+stdbuf -oL omxplayer --video_queue 0.5 --timeout 5 --vol 600 --adev alsa:plughw:"$AUDIO_OUT_DEV",0 --layer 6 udp://:@:10000 2>/dev/null | {
 LINE="1"
 rm  /home/pi/tmp/stream_status.txt >/dev/null 2>/dev/null
 while IFS= read -r line

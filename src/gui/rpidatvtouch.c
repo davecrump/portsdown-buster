@@ -21161,6 +21161,7 @@ int main(int argc, char **argv)
   ReadRTLPresets();
   ReadRXPresets();
   ReadStreamPresets();
+  ReadLMRXPresets();
 
   // Initialise all the button Status Indexes to 0
   InitialiseButtons();
