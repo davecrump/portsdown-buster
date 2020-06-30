@@ -56,9 +56,13 @@ echo "The RPi Jack Audio Card number is -"$RPIJ_AUDIO_DEV"-"
 USBOUT_AUDIO_DEV="$(aplay -l 2> /dev/null | grep 'USB Audio Device' | cut -c6-6)"
 
 if [ "$USBOUT_AUDIO_DEV" == '' ]; then
-  printf "USB Dongle audio device was not found, setting to 1\n"
-  USBOUT_AUDIO_DEV="1"
+  printf "USB Dongle audio device was not found, setting to RPi Jack\n"
+  USBOUT_AUDIO_DEV=$RPIJ_AUDIO_DEV
 fi
+
+# Take only the first character
+USBOUT_AUDIO_DEV="$(echo $USBOUT_AUDIO_DEV | cut -c1-1)"
+
 echo "The USB Dongle Audio Card number is -"$USBOUT_AUDIO_DEV"-"
 
 ############ CHOOSE THE AUDIO OUTPUT DEVICE #############################
@@ -77,11 +81,14 @@ echo "The Selected Audio Card number is -"$AUDIO_OUT_DEV"-"
 
 ###########################################################################
 
+# Put up a Screen Caption
+sudo fbi -T 1 -noverbose -a /home/pi/rpidatv/scripts/images/BATC_Black.png >/dev/null 2>/dev/null
+(sleep 1; sudo killall -9 fbi >/dev/null 2>/dev/null) &  ## kill fbi once it has done its work
+
 # Read in URL argument
 STREAMURL=$1
 
-#stdbuf -oL omxplayer --timeout 2 $STREAMURL 2>/dev/null | {
-stdbuf -oL omxplayer --timeout 2 --adev alsa:plughw:"$AUDIO_OUT_DEV",0 $STREAMURL 2>/dev/null | {
+stdbuf -oL omxplayer --timeout 2 --adev alsa:plughw:"$AUDIO_OUT_DEV",0 --layer 6 $STREAMURL 2>/dev/null | {
 LINE="1"
 rm  /home/pi/tmp/stream_status.txt >/dev/null 2>/dev/null
 while IFS= read -r line

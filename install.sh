@@ -382,19 +382,18 @@ make dvb
 cp limesdr_dvb /home/pi/rpidatv/bin/
 cd /home/pi
 
-# Download the previously selected version of LongMynd
+# Install LongMynd
 echo
 echo "--------------------------------------------"
 echo "----- Installing the LongMynd Receiver -----"
 echo "--------------------------------------------"
-wget https://github.com/${GIT_SRC}/longmynd/archive/master.zip
-unzip -o master.zip
-mv longmynd-master longmynd
-rm master.zip
-
+cd /home/pi
+rm -rf longmynd
+cp -r /home/pi/rpidatv/src/longmynd/ /home/pi/
 cd longmynd
 make
 cd /home/pi
+
 
 # Enable camera
 echo
