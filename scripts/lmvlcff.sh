@@ -78,29 +78,46 @@ echo " " >/home/pi/tmp/vlc_overlay.txt
 sudo killall longmynd >/dev/null 2>/dev/null
 sudo killall vlc >/dev/null 2>/dev/null
 
+# Play a very short dummy file if this is a first start for VLC since boot
+# This makes sure the RX works on first selection after boot
+if [[ ! -f /home/pi/tmp/vlcprimed ]]; then
+  if [ "$DISPLAY" == "Element14_7" ]; then
+    cvlc -I rc --rc-host 127.0.0.1:1111 -f --codec ffmpeg --video-title-timeout=100 \
+      --width 800 --height 480 \
+      --sub-filter marq --marq-x 25 --marq-file "/home/pi/tmp/vlc_overlay.txt" \
+      --gain 3 --alsa-audio-device $AUDIO_DEVICE \
+      /home/pi/rpidatv/video/blank.ts vlc:quit >/dev/null 2>/dev/null &
+  else  # Waveshare
+    cvlc -I rc --rc-host 127.0.0.1:1111 -f --codec ffmpeg --video-title-timeout=100 \
+      --sub-filter marq --marq-x 25 --marq-file "/home/pi/tmp/vlc_overlay.txt" \
+      --gain 3 --alsa-audio-device $AUDIO_DEVICE \
+      /home/pi/rpidatv/video/blank.ts vlc:quit >/dev/null 2>/dev/null &
+  fi
+  sleep 1
+  touch /home/pi/tmp/vlcprimed
+  echo shutdown | nc 127.0.0.1 1111
+fi
+
+# Create the ts fifo
 sudo rm longmynd_main_ts >/dev/null 2>/dev/null
 mkfifo longmynd_main_ts
 
+# Start LongMynd
 sudo /home/pi/longmynd/longmynd -s longmynd_status_fifo $VOLTS_CMD $INPUT_CMD $FREQ_KHZ $SYMBOLRATEK &
 
+# Start VLC
 if [ "$DISPLAY" == "Element14_7" ]; then
   cvlc -I rc --rc-host 127.0.0.1:1111 -f --codec ffmpeg --video-title-timeout=100 \
     --width 800 --height 480 \
     --sub-filter marq --marq-x 25 --marq-file "/home/pi/tmp/vlc_overlay.txt" \
     --gain 3 --alsa-audio-device $AUDIO_DEVICE \
     longmynd_main_ts >/dev/null 2>/dev/null &
-
-#    longmynd_main_ts 2>/home/pi/tmp/vlclog.txt &
 else  # Waveshare
   cvlc -I rc --rc-host 127.0.0.1:1111 -f --codec ffmpeg --video-title-timeout=100 \
     --sub-filter marq --marq-x 25 --marq-file "/home/pi/tmp/vlc_overlay.txt" \
     --gain 3 --alsa-audio-device $AUDIO_DEVICE \
     longmynd_main_ts >/dev/null 2>/dev/null &
 fi
-
-#    --sub-filter marq --marq-x 25 --marq-file "/home/pi/tmp/vlc_overlay.txt" \
-#    --sub-filter marq --marq-x 25 --marq-file "/home/pi/vlc-test-text.txt" \
-
 
 exit
 
