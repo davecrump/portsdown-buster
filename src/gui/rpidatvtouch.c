@@ -32,6 +32,7 @@ Rewitten by Dave, G8GKQ
 #include <dirent.h>
 #include <ctype.h>
 #include <stdbool.h>
+#include <time.h>
 
 #include "VG/openvg.h"
 #include "VG/vgu.h"
@@ -8088,7 +8089,7 @@ void *WaitButtonLMRX(void * arg)
         count_time_ms = count_time_ms + 1;
       }
       printf("Shutting Down VLC\n");
-      system("/home/pi/rpidatv/scripts/lmvlcsd.sh");
+      system("/home/pi/rpidatv/scripts/lmvlcsd.sh &");
       count_time_ms = 0;
       while ((touch_response == 1) && (count_time_ms < 2500))
       {
@@ -8099,7 +8100,8 @@ void *WaitButtonLMRX(void * arg)
       if (touch_response == 1) // count_time has elapsed and still no reponse
       {
 
-        system("sudo killall -9 vlc");
+        //system("sudo killall -9 vlc");
+        system("/home/pi/rpidatv/scripts/lmvlcsd.sh &");
         init(&wscreen, &hscreen);  // Restart the graphics
         BackgroundRGB(0, 0, 0, 255); // Clear the screen
         exit(129);                 // Restart the GUI
@@ -9045,6 +9047,8 @@ void LMRX(int NoButton)
   int MODCOD;
   int Parameters_currently_displayed = 1;  // 1 for displayed, 0 for blank
   float previousMER = 0;
+  int FirstLock = 0;  // set to 1 on first lock, and 2 after parameter fade
+  clock_t LockTime;
 
   // Set globals
   FinishedButton = 1;
@@ -9380,8 +9384,14 @@ void LMRX(int NoButton)
 
           if ((stat_string[0] == '1') && (stat_string[1] == '2'))  // MER
           {
-            if (FinishedButton == 1)  // Parameters displayed
+            if (FinishedButton == 1)  // Parameters requested to be displayed
             {
+              // If they weren't displayed before, set the previousMER to 0 
+              // so they get displayed and don't have to wait for an MER change
+              if (Parameters_currently_displayed != 1)
+              {
+                previousMER = 0;
+              }
               Parameters_currently_displayed = 1;
               strcpy(MERtext, stat_string);
               chopN(MERtext, 3);
@@ -9409,12 +9419,28 @@ void LMRX(int NoButton)
               {
                 Fill(255, 127, 127, 255);
               }
-              Text(wscreen * 1.0 / 40.0, hscreen - 9 * linepitch, MERtext, font, pointsize);
+              else  // Auto-hide the parameter display after 8 seconds
+              {
+                if (FirstLock == 0) // This is the first time MER has exceeded threshold
+                {
+                  FirstLock = 1;
+                  LockTime = clock();  // Set first lock time
+                }
+                if ((clock() > LockTime + 80000) && (FirstLock == 1))  // About 5s since first lock
+                {
+                  FinishedButton = 2; // Hide parameters
+                  FirstLock = 2;      // and stop it trying to hide them again
+                }
+              }
 
-              // Only change VLC file if MER has changed
+              Text(wscreen * 1.0 / 40.0, hscreen - 9 * linepitch, MERtext, font, pointsize);
+              Fill(255, 255, 255, 255);  // Back to white text
+              Text(wscreen * 1.0 / 40.0, hscreen - 10.5 * linepitch, "Touch Left to hide data, Right to exit", font, pointsize);
+              Text(wscreen * 1.0 / 40.0, hscreen - 11.5 * linepitch, "Touch Lower left for image capture", font, pointsize);
+
+              // Only change VLC overlay file if MER has changed
               if (MER != previousMER)
               {
-
                 // Strip trailing line feeds from text strings
                 ServiceProvidertext[strlen(ServiceProvidertext) - 1] = '\0';
                 Servicetext[strlen(Servicetext) - 1] = '\0';
@@ -9429,8 +9455,6 @@ void LMRX(int NoButton)
                 strcat(vlctext, Modulationtext);
                 strcat(vlctext, "%n");
                 strcat(vlctext, FECtext);
-                strcat(vlctext, "%n");
-                strcat(vlctext, SRtext);
                 strcat(vlctext, "%n");
                 strcat(vlctext, ServiceProvidertext);
                 strcat(vlctext, "%n");
@@ -9454,9 +9478,6 @@ void LMRX(int NoButton)
                 previousMER = MER;
               }
 
-              Fill(255, 255, 255, 255);
-              Text(wscreen * 1.0 / 40.0, hscreen - 10.5 * linepitch, "Touch Left to hide data, Right to exit", font, pointsize);
-              Text(wscreen * 1.0 / 40.0, hscreen - 11.5 * linepitch, "Touch Lower left for image capture", font, pointsize);
             }
             else
             {
@@ -9467,30 +9488,33 @@ void LMRX(int NoButton)
                 Rect(wscreen * 1.0 / 40.0, hscreen - 4.2 * linepitch, wscreen * 15.0 / 40.0, 4.0 * linepitch);
                 Parameters_currently_displayed = 0;
 
-                FILE *fw=fopen("/home/pi/tmp/vlc_overlay.txt","w+");
+                FILE *fw=fopen("/home/pi/tmp/vlc_temp_overlay.txt","w+");
                 if(fw!=0)
                 {
                   fprintf(fw, " ");
                 }
                 fclose(fw);
+
+                // Copy temp file to file to be read by VLC to prevent file collisions
+                system("cp /home/pi/tmp/vlc_temp_overlay.txt /home/pi/tmp/vlc_overlay.txt");
               }
             }
             End();
-          }
+          }  // end of MER section
           stat_string[0] = '\0';
         }
-        else
+        else // first character of status string is not a $
         {
           strcat(stat_string, status_message_char);
         }
       }
-      else
+      else  // num < 0, so no more characters
       {
         FinishedButton = 0;
       }
     } 
     // Shutdown VLC if it has not stolen the graphics
-    system("/home/pi/rpidatv/scripts/lmvlcsd.sh");
+    system("/home/pi/rpidatv/scripts/lmvlcsd.sh &");
 
     close(fd_status_fifo); 
     finish();
@@ -10261,7 +10285,7 @@ void LMRX(int NoButton)
       }
     }
     // Shutdown VLC if it has not stolen the graphics
-    system("/home/pi/rpidatv/scripts/lmvlcsd.sh");
+    system("/home/pi/rpidatv/scripts/lmvlcsd.sh &");
 
     close(fd_status_fifo); 
     finish();
@@ -21022,6 +21046,7 @@ terminate(int dummy)
   ReceiveStop();
   RTLstop();
   system("killall -9 omxplayer.bin >/dev/null 2>/dev/null");
+  system("/home/pi/rpidatv/scripts/lmvlcsd.sh &");
   system("sudo killall lmudp.sh >/dev/null 2>/dev/null");
   system("sudo killall longmynd >/dev/null 2>/dev/null");
   finish();
