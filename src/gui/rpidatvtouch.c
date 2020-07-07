@@ -587,6 +587,40 @@ void GetMicAudioCard(char mic[15])
   pclose(fp);
 }
 
+
+/***************************************************************************//**
+ * @brief Looks up the Pi Cam device name
+ *
+ * @param picamdev(str) Device name with no CR (/dev/videon)
+ *
+ * @return void
+*******************************************************************************/
+void GetPiCamDev(char picamdev[15])
+{
+  FILE *fp;
+  int linecount = 0;
+  char result[15];
+
+  /* Open the command for reading. */
+  fp = popen("v4l2-ctl --list-devices 2> /dev/null |sed -n '/mmal/,/dev/p' | grep 'dev' | tr -d '\t'", "r");
+  if (fp == NULL) {
+    printf("Failed to run command\n" );
+    exit(1);
+  }
+
+  /* Read the output a line at a time - output it. */
+  while ((fgets(result, 12, fp) != NULL) && (linecount == 0))
+  {
+    strcpy(picamdev, result);
+    //printf("%s\n", picamdev);
+    linecount = 1;
+  }
+
+  /* close */
+  pclose(fp);
+}
+
+
 /***************************************************************************//**
  * @brief Looks up the current Linux Version
  *
@@ -7482,25 +7516,48 @@ void CompVidStart()
   char SnapIndex[256];
   int SnapNumber;
   int Snap;
+  char picamdev1[15];
+  char bashcmd[255];
 
   if (strcmp(CurrentVidSource, "Pi Cam") == 0)
   {
     finish();
     system("sudo modprobe bcm2835_v4l2");
-    if (strcmp(DisplayType, "Element14_7") == 0) // 7 inch screen
+    GetPiCamDev(picamdev1);         
+    if (strlen(picamdev1) > 1)
     {
-      system("v4l2-ctl -d /dev/video0 --set-fmt-overlay=left=0,top=0,width=736,height=416 --overlay=1");
-      system("v4l2-ctl -d /dev/video1 --set-fmt-overlay=left=0,top=0,width=736,height=416 --overlay=1");
+      if (strcmp(DisplayType, "Element14_7") == 0) // 7 inch screen
+      {
+        strcpy(bashcmd, "v4l2-ctl -d ");
+        strcat(bashcmd, picamdev1);
+        strcat(bashcmd, " --set-fmt-overlay=left=0,top=0,width=736,height=416 --overlay=1");
+
+        //system("v4l2-ctl -d /dev/video0 --set-fmt-overlay=left=0,top=0,width=736,height=416 --overlay=1");
+        //system("v4l2-ctl -d /dev/video1 --set-fmt-overlay=left=0,top=0,width=736,height=416 --overlay=1");
+      }
+      else  // 3.5 inch screen
+      {
+        strcpy(bashcmd, "v4l2-ctl -d ");
+        strcat(bashcmd, picamdev1);
+        strcat(bashcmd, " --set-fmt-overlay=left=0,top=0,width=656,height=512 --overlay=1");
+        //system("v4l2-ctl -d /dev/video0 --set-fmt-overlay=left=0,top=0,width=656,height=512 --overlay=1");
+        //system("v4l2-ctl -d /dev/video1 --set-fmt-overlay=left=0,top=0,width=656,height=512 --overlay=1");
+      }
+      system(bashcmd);
+      strcpy(ScreenState, "VideoOut");
+      wait_touch();
+      strcpy(bashcmd, "v4l2-ctl -d ");  // Now turn the overlay off
+      strcat(bashcmd, picamdev1);
+      strcat(bashcmd, " --overlay=0");
+      system(bashcmd);
+      //system("v4l2-ctl -d /dev/video0 --overlay=0");
+      //system("v4l2-ctl -d /dev/video1 --overlay=0");
     }
-    else  // 3.5 inch screen
+    else
     {
-      system("v4l2-ctl -d /dev/video0 --set-fmt-overlay=left=0,top=0,width=656,height=512 --overlay=1");
-      system("v4l2-ctl -d /dev/video1 --set-fmt-overlay=left=0,top=0,width=656,height=512 --overlay=1");
+      MsgBox("Pi Cam Not Connected");
+      wait_touch();
     }
-    strcpy(ScreenState, "VideoOut");
-    wait_touch();
-    system("v4l2-ctl -d /dev/video0 --overlay=0");
-    system("v4l2-ctl -d /dev/video1 --overlay=0");
   }
 
   if (strcmp(CurrentVidSource, "C920") == 0)
@@ -7799,8 +7856,10 @@ void TransmitStop()
   char Param[255];
   char Value[255];
   int WebcamPresent = 0;
+  char bashcmd[255];
+  char picamdev1[15];
 
-  printf("Transmit Stop\n");
+  printf("Stopping all transmit processes, even if they weren't running\n");
 
   // If transmit menu is displayed, blue-out the TX button here
   // code to be added
@@ -7855,9 +7914,15 @@ void TransmitStop()
     pinMode(GPIO_Tverter, OUTPUT);
   }
 
-  // Turn the Viewfinder off
-  system("v4l2-ctl -d /dev/video1 --overlay=0 >/dev/null 2>/dev/null");
-  system("v4l2-ctl -d /dev/video0 --overlay=0 >/dev/null 2>/dev/null");
+  // Look up the Pi Cam device anme and turn the Viewfinder off
+  GetPiCamDev(picamdev1);         
+  if (strlen(picamdev1) > 1)
+  {
+    strcpy(bashcmd, "v4l2-ctl -d ");
+    strcat(bashcmd, picamdev1);
+    strcat(bashcmd, " --overlay=0 >/dev/null 2>/dev/null");
+    system(bashcmd);
+  }
 
   // Stop the audio relay in CompVid mode
   system("sudo killall arecord >/dev/null 2>/dev/null");
@@ -12255,6 +12320,9 @@ void do_video_monitor(int button)
 
 void MonitorStop()
 {
+  char bashcmd[255];
+  char picamdev1[15];
+
   // Kill the key processes as nicely as possible
   system("sudo killall rpidatv >/dev/null 2>/dev/null");
   system("sudo killall ffmpeg >/dev/null 2>/dev/null");
@@ -12266,8 +12334,16 @@ void MonitorStop()
   system("sudo killall mplayer >/dev/null 2>/dev/null");
 
   // Turn the Viewfinder off
-  system("v4l2-ctl -d /dev/video1 --overlay=0 >/dev/null 2>/dev/null");
-  system("v4l2-ctl -d /dev/video0 --overlay=0 >/dev/null 2>/dev/null");
+  GetPiCamDev(picamdev1);         
+  if (strlen(picamdev1) > 1)
+  {
+    strcpy(bashcmd, "v4l2-ctl -d ");
+    strcat(bashcmd, picamdev1);
+    strcat(bashcmd, " --overlay=0 >/dev/null 2>/dev/null");
+    system(bashcmd);
+  }
+  //system("v4l2-ctl -d /dev/video1 --overlay=0 >/dev/null 2>/dev/null");
+  //system("v4l2-ctl -d /dev/video0 --overlay=0 >/dev/null 2>/dev/null");
 
   // Stop the audio relay in CompVid mode
   system("sudo killall arecord >/dev/null 2>/dev/null");
