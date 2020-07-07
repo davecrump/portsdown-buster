@@ -53,7 +53,7 @@ echo "The RPi Jack Audio Card number is -"$RPIJ_AUDIO_DEV"-"
 # card 1: Device [USB Audio Device], device 0: USB Audio [USB Audio]
 # then take the 6th character
 
-USBOUT_AUDIO_DEV="$(aplay -l 2> /dev/null | grep 'USB Audio Device' | cut -c6-6)"
+USBOUT_AUDIO_DEV="$(aplay -l 2> /dev/null | grep 'USB Audio' | cut -c6-6)"
 
 if [ "$USBOUT_AUDIO_DEV" == '' ]; then
   printf "USB Dongle audio device was not found, setting to RPi Jack\n"
