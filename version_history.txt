@@ -1,3 +1,7 @@
+202007230
+Bugfix 7 inch screen after dist-upgrade
+Don't dist-upgrade because of no 3.5 inch screen support
+
 202007012
 Add vlc with ffmpeg receive player
 Overlay of parameters on vlc ffmpeg

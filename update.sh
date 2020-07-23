@@ -157,7 +157,8 @@ DisplayUpdateMsg "Step 4a of 10\nStill Updating Software Packages\n\nXXXX------"
 
 # --------- Update Packages ------
 
-sudo apt-get -y dist-upgrade # Upgrade all the installed packages to their latest version
+# 202007230 Do not dist-upgrade as it breaks support for 3.5 inch screens 
+#sudo apt-get -y dist-upgrade # Upgrade all the installed packages to their latest version
 
 # --------- Install new packages as Required ---------
 
