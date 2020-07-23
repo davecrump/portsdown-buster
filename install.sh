@@ -53,7 +53,8 @@ echo
 echo "-----------------------------------"
 echo "----- Performing dist-upgrade -----"
 echo "-----------------------------------"
-sudo apt-get -y dist-upgrade
+# 202007230 Do not dist-upgrade as it breaks support for 3.5 inch screens 
+#sudo apt-get -y dist-upgrade
 
 # Install the packages that we need
 echo

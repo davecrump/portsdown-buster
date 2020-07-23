@@ -195,9 +195,11 @@ if [[ "$SESSION_TYPE" == "boot" && "$MODE_STARTUP" == "Display_boot" ]]; then
   if [ "$DISPLAY" == "Waveshare" ]; then
 
     dmesg | grep 'rpi-ft5406' >/dev/null 2>/dev/null
-    SCREEN_RESULT="$?"
+    SCREEN_RESULT1="$?"
+    dmesg | grep 'raspberrypi-ts' >/dev/null 2>/dev/null
+    SCREEN_RESULT2="$?"
 
-    if [ "$SCREEN_RESULT" == 1 ]; then # no 7 inch display detected
+    if [ "$SCREEN_RESULT1" == 1 ] && [ "$SCREEN_RESULT2" == 1 ]; then # no 7 inch display detected
       # Remove reboot lock
       rm /home/pi/rpidatv/scripts/reboot.lock >/dev/null 2>/dev/null
     else
@@ -246,9 +248,12 @@ if [[ "$SESSION_TYPE" == "boot" && "$MODE_STARTUP" == "Display_boot" ]]; then
 
   if [ "$DISPLAY" == "Element14_7" ]; then
 
-    dmesg | grep 'ft5406' >/dev/null 2>/dev/null
-    DRIVER_RESULT="$?"
-    if [ "$DRIVER_RESULT" -eq 0 ]; then  # driver present and working
+    dmesg | grep 'rpi-ft5406' >/dev/null 2>/dev/null
+    SCREEN_RESULT1="$?"
+    dmesg | grep 'raspberrypi-ts' >/dev/null 2>/dev/null
+    SCREEN_RESULT2="$?"
+
+    if [ "$SCREEN_RESULT1" == 0 ] || [ "$SCREEN_RESULT2" == 0 ]; then  # driver present and working
       # Remove reboot lock
       rm /home/pi/rpidatv/scripts/reboot.lock >/dev/null 2>/dev/null
     else
