@@ -55,6 +55,7 @@ echo "----- Performing dist-upgrade -----"
 echo "-----------------------------------"
 sudo apt-get -y dist-upgrade
 
+
 # Install the packages that we need
 echo
 echo "-------------------------------"
@@ -543,6 +544,15 @@ echo "alias ugui='/home/pi/rpidatv/scripts/utils/uguir.sh'"  >> /home/pi/.bash_a
 
 # Load modified .bashrc to run startup script on ssh logon
 cp /home/pi/rpidatv/scripts/configs/startup.bashrc /home/pi/.bashrc
+
+# set the framebuffer to 32 bit depth by disabling dtoverlay=vc4-fkms-v3d
+echo
+echo "----------------------------------------------"
+echo "---- Setting Framebuffer to 32 bit depth -----"
+echo "----------------------------------------------"
+
+sudo sed -i "/^dtoverlay=vc4-fkms-v3d/c\#dtoverlay=vc4-fkms-v3d" /boot/config.txt
+
 
 # Record Version Number
 cd /home/pi/rpidatv/scripts/

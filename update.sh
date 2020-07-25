@@ -394,7 +394,22 @@ cp -f -r "$PATHUBACKUP"/user_button5.sh "$PATHSCRIPT"/user_button5.sh
 cp -f -r "$PATHUBACKUP"/TXstartextras.sh "$PATHSCRIPT"/TXstartextras.sh
 cp -f -r "$PATHUBACKUP"/TXstopextras.sh "$PATHSCRIPT"/TXstopextras.sh
 
+# set the framebuffer to 32 bit depth by disabling dtoverlay=vc4-fkms-v3d
+echo
+echo "----------------------------------------------"
+echo "---- Setting Framebuffer to 32 bit depth -----"
+echo "----------------------------------------------"
 
+sudo sed -i "/^dtoverlay=vc4-fkms-v3d/c\#dtoverlay=vc4-fkms-v3d" /boot/config.txt
+
+# Install Waveshare 3.5A DTOVERLAY
+echo
+echo "---------------------------------------------------------"
+echo "---- Installing the updated Waveshare 3.5 A Overlay -----"
+echo "---------------------------------------------------------"
+cd /home/pi/rpidatv/scripts/
+sudo cp ./waveshare35a.dtbo /boot/overlays/
+cd /home/pi
 
 DisplayUpdateMsg "Step 9 of 10\nFinishing Off\n\nXXXXXXXXX-"
 
