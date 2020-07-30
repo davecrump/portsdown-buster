@@ -129,10 +129,12 @@ detect_audio()
       WC_VIDEO_FPS=30
     fi
 
-    # Check for the presence of a C910 Webcam with stereo audio
+    C910Present=0
+    # Check for the presence of an old C910 Webcam with stereo audio
     arecord -l | grep -E -q \
       "U0x46d0x821"
     if [ $? == 0 ]; then   ## Present
+      C910Present=1
       # Look for the video dongle, select the line and take
       # the 6th character.  Max card number = 8 !!
       WCAM="$(arecord -l | grep -E \
@@ -140,6 +142,21 @@ detect_audio()
         | head -c 6 | tail -c 1)"
       WC_AUDIO_CHANNELS=2
       WC_AUDIO_SAMPLE=48000
+      WC_VIDEO_FPS=30
+    fi
+
+    # Check for the presence of a new C910 Webcam with stereo audio
+    arecord -l | grep -E -q \
+      "U0x46d0x823"
+    if [ $? == 0 ]; then   ## Present
+      C910Present=1
+      # Look for the video dongle, select the line and take
+      # the 6th character.  Max card number = 8 !!
+      WCAM="$(arecord -l | grep -E \
+        "U0x46d0x823" \
+        | head -c 6 | tail -c 1)"
+      WC_AUDIO_CHANNELS=2
+      WC_AUDIO_SAMPLE=32000
       WC_VIDEO_FPS=30
     fi
 
@@ -339,6 +356,14 @@ detect_video()
     # select the line with the device details and delete the leading tab
     VID_WEBCAM="$(v4l2-ctl --list-devices 2> /dev/null | \
       sed -n '/046d:0821/,/dev/p' | grep 'dev' | tr -d '\t')"
+  fi
+
+  if [ "${#VID_WEBCAM}" -lt "10" ]; then # $VID_WEBCAM currently empty
+
+    # List the video devices, select the 2 lines for a new C910 device, then
+    # select the line with the device details and delete the leading tab
+    VID_WEBCAM="$(v4l2-ctl --list-devices 2> /dev/null | \
+      sed -n '/046d:0823/,/dev/p' | grep 'dev' | tr -d '\t')"
   fi
 
   if [ "${#VID_WEBCAM}" -lt "10" ]; then # $VID_WEBCAM currently empty

@@ -1,3 +1,6 @@
+202007310
+Add support for B910 WebCam ID 046d:0823
+
 202007240
 Load new Waveshare 35a overlay
 Re-enable dist-upgrade
