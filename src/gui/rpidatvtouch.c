@@ -5718,7 +5718,7 @@ void ApplyTXConfig()
     {
       if (strcmp(CurrentFormat, "1080p") == 0)
       {
-        MsgBox2("1080p only available with C920 Webcam"
+        MsgBox2("1080p encoding not available with webcam"
           , "Please select another mode");
         wait_touch();
       }
