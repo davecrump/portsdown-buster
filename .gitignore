@@ -47,5 +47,5 @@ src/siggen/DejaVuSerif.inc
 src/siggen/font2openvg
 src/siggen/libshapes.o
 src/siggen/oglinit.o
-
-
+src/gui/libshapes.c
+src/tstools/

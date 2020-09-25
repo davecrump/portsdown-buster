@@ -1,19 +1,19 @@
 ![portsdown banner](/doc/img/Buster_Header_Image.JPG)
-# Portsdown Buster Build
+# Portsdown 2020 Build
 
-**The Portsdown** is a DVB-S and DVB-S2 digital television transmitter for the Raspberry Pi 3B and 3B+.  The core of the transmitter was written by Evariste Courjaud F5OEO and is maintained by him.  This BATC Version, known as the Portsdown Transmitter, has been developed by a team of BATC members for use with a LimeSDR Mini, a DATV Express PCB or an external synthesized oscillator and modulator/filter board to produce a signal suitable for driving a high power amateur television transmitter on the amateur bands.  The intention is that the design should be reproducible by someone who has never used Linux before.  Detailed instructions on loading the software are listed below, and further details of the complete transmitter design and build are on the BATC Wiki at https://wiki.batc.org.uk/The_Portsdown_Transmitter.  There is a Forum for discussion of the project here: https://forum.batc.org.uk/viewforum.php?f=103
+**The Portsdown 2020** is a DVB-S and DVB-S2 digital television transmitter for the Raspberry Pi 3B and 3B+.  The core of the transmitter was written by Evariste Courjaud F5OEO and is maintained by him.  This BATC Version, known as the Portsdown Transmitter, has been developed by a team of BATC members for use with a LimeSDR Mini, a DATV Express PCB or an external synthesized oscillator and modulator/filter board to produce a signal suitable for driving a high power amateur television transmitter on the amateur bands.  The intention is that the design should be reproducible by someone who has never used Linux before.  Detailed instructions on loading the software are listed below, and further details of the complete transmitter design and build are on the BATC Wiki at https://wiki.batc.org.uk/The_Portsdown_Transmitter.  There is a Forum for discussion of the project here: https://forum.batc.org.uk/viewforum.php?f=103
 
-The Portsdown software can also be used with a LimeSDR (Mini or USB) or a DATV Express or the bespoke filter-modulator board.
+The Portsdown software can be used with a LimeSDR (Mini or USB) or a DATV Express or the bespoke filter-modulator board.
 
-This version is based on Raspbian Buster and is compatible with the Raspberry Pi 3B and 3B+.  It is the version on which development effort will be focused.  Only a limited subset of the Portsdown features are fully working in this build; check https://wiki.batc.org.uk/Portsdown_2020_Buster_Software for the latest news.  The older Jessie and Stretch versions will still be supported, but may not be updated with as many new features.
+This version is based on Raspios Buster and is compatible with the Raspberry Pi 3B and 3B+.  A separate build, the Portsdown 4, is required if you are using a Raspberry Pi 4.  The older Jessie (2018) and Stretch (2019) Portsdown versions are no longer supported.
 
 Our thanks to Evariste and all the other contributors to this community project.  All code within the project is GPL.
 
-# Installation for BATC Portsdown Transmitter Buster Version
+# Installation for BATC Portsdown 2020 Buster Version
 
 The preferred installation method only needs a Windows PC connected to the same (internet-connected) network as your Raspberry Pi.  Do not connect a keyboard or HDMI display directly to your Raspberry Pi.
 
-- First download the 2020-02-13 release of Raspbian Buster Lite on to your Windows PC from here http://downloads.raspberrypi.org/raspbian_lite/images/raspbian_lite-2020-02-14/2020-02-13-raspbian-buster-lite.zip 
+- First download the 2020-08-20 release of Raspios Buster Lite on to your Windows PC from here https://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-2020-08-24/2020-08-20-raspios-buster-armhf-lite.zip 
 
 - Unzip the image and then transfer it to a Micro-SD Card using Win32diskimager https://sourceforge.net/projects/win32diskimager/
 

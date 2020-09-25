@@ -1463,7 +1463,7 @@ void NewMPEGKey(char* KeyString)
   }
 
   // Now add the new key
-  snprintf(CommandString, 100, "sudo sh -c \"echo \\\"decode_MPG2=%s\\\" >> /boot/config.txt\"", KeyString);
+  snprintf(CommandString, 100, "sudo sh -c \"echo \\\"decode_MPG2=%s\n\\\" >> /boot/config.txt\"", KeyString);
   //printf("%s\n", CommandString);
   system(CommandString);
 
@@ -2613,12 +2613,11 @@ int CheckC920()
   {
     if (strlen(response_line) > 1)
     {
+      pclose(fp);
       return 1;
     }
-
   }
   pclose(fp);
-
   return 0;
 }
 
@@ -5630,10 +5629,10 @@ void ApplyTXConfig()
           {
             strcpy(ModeInput, "C920HDH264");
           }
-          else
-          {
-            strcpy(CurrentFormat, "16:9");
-          }
+          //else
+          //{
+          //  strcpy(CurrentFormat, "16:9");
+          //}
         }
       }
       if (strcmp(CurrentFormat, "16:9") == 0)
@@ -5647,14 +5646,14 @@ void ApplyTXConfig()
             strcpy(ModeInput, "C920HDH264");
             wait_touch();
           }
-          else if (strcmp(CurrentSource, "CompVid") == 0)
-          {
-            strcpy(CurrentFormat, "16:9");
-          }
-          else
-          {
-            strcpy(CurrentFormat, "4:3");
-          }
+          //else if (strcmp(CurrentSource, "CompVid") == 0)
+          //{
+          //  strcpy(CurrentFormat, "16:9");
+          //}
+          //else
+          //{
+          //  strcpy(CurrentFormat, "4:3");
+          //}
         }
       }
       if (strcmp(CurrentFormat, "4:3") == 0)
@@ -9480,7 +9479,7 @@ void LMRX(int NoButton)
               Text(wscreen * 1.0 / 40.0, hscreen - 6 * linepitch, ServiceProvidertext, font, pointsize);
               Text(wscreen * 1.0 / 40.0, hscreen - 7 * linepitch, Servicetext, font, pointsize);
               Text(wscreen * 1.0 / 40.0, hscreen - 8 * linepitch, Encodingtext, font, pointsize);
-              if (MER < MERThreshold)
+              if (MER < MERThreshold + 0.1)
               {
                 Fill(255, 127, 127, 255);
               }
@@ -9931,7 +9930,7 @@ void LMRX(int NoButton)
               Text(wscreen * 1.0 / 40.0, hscreen - 6 * linepitch, ServiceProvidertext, font, pointsize);
               Text(wscreen * 1.0 / 40.0, hscreen - 7 * linepitch, Servicetext, font, pointsize);
               Text(wscreen * 1.0 / 40.0, hscreen - 8 * linepitch, Encodingtext, font, pointsize);
-              if (MER < MERThreshold)
+              if (MER < MERThreshold + 0.1)
               {
                 Fill(255, 127, 127, 255);
               }
@@ -10316,7 +10315,7 @@ void LMRX(int NoButton)
               Text(wscreen * 1.0 / 40.0, hscreen - 6 * linepitch, ServiceProvidertext, font, pointsize);
               Text(wscreen * 1.0 / 40.0, hscreen - 7 * linepitch, Servicetext, font, pointsize);
               Text(wscreen * 1.0 / 40.0, hscreen - 8 * linepitch, Encodingtext, font, pointsize);
-              if (MER < MERThreshold)
+              if (MER < MERThreshold + 0.1)
               {
                 Fill(255, 127, 127, 255);
               }
@@ -10698,7 +10697,7 @@ void LMRX(int NoButton)
             Text(wscreen * 1.0 / 40.0, hscreen - 6 * linepitch, ServiceProvidertext, font, pointsize);
             Text(wscreen * 1.0 / 40.0, hscreen - 7 * linepitch, Servicetext, font, pointsize);
             Text(wscreen * 1.0 / 40.0, hscreen - 8 * linepitch, Encodingtext, font, pointsize);
-            if (MER < MERThreshold)
+            if (MER < MERThreshold + 0.1)
             {
               Fill(255, 127, 127, 255);
             }

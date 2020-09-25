@@ -1,3 +1,9 @@
+202010010
+New builds based on Raspios 2020-08-20
+Increase Lime PTT Delay to 12 seconds
+Allow H264 PiCam 16:9
+Continue to display RX params with no signal
+
 202007310
 Add support for B910 WebCam ID 046d:0823
 

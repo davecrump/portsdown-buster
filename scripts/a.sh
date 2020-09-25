@@ -51,6 +51,7 @@ PIDPMT=$(get_config_var pidpmt $PCONFIGFILE)
 PIDSTART=$(get_config_var pidstart $PCONFIGFILE)
 SERVICEID=$(get_config_var serviceid $PCONFIGFILE)
 LOCATOR=$(get_config_var locator $PCONFIGFILE)
+FORMAT=$(get_config_var format $PCONFIGFILE)
 
 PIN_I=$(get_config_var gpio_i $PCONFIGFILE)
 PIN_Q=$(get_config_var gpio_q $PCONFIGFILE)
@@ -550,6 +551,29 @@ case "$MODE_INPUT" in
     RESULT="$?"
     if [ "$RESULT" -ne 0 ]; then
       exit
+    fi
+
+    # Allow for Widescreen modes
+
+    if [ "$FORMAT" == "16:9" ]; then
+      VIDEO_WIDTH=1024
+      VIDEO_HEIGHT=576
+    elif [ "$FORMAT" == "720p" ] || [ "$FORMAT" == "1080p" ]; then
+      VIDEO_WIDTH=1280
+      VIDEO_HEIGHT=720
+    else
+      # Set the image size depending on bitrate (except for widescreen)
+      if [ "$BITRATE_VIDEO" -gt 190000 ]; then  # 333KS FEC 1/2 or better
+        VIDEO_WIDTH=768
+        VIDEO_HEIGHT=576
+      else
+        VIDEO_WIDTH=384
+        VIDEO_HEIGHT=288
+      fi
+      if [ "$BITRATE_VIDEO" -lt 100000 ]; then
+        VIDEO_WIDTH=160
+        VIDEO_HEIGHT=112
+      fi
     fi
 
     # Free up Pi Camera for direct OMX Coding by removing driver
@@ -1248,12 +1272,12 @@ fi
       VIDEO_FPS=$WC_VIDEO_FPS
     ;;
     WEBCAM16MPEG-2)
-      if [ $C920Present == 1 ]; then
+      if [ $C920Present == 1 ] || [ $C910Present == 1 ]; then
         v4l2-ctl --device="$VID_WEBCAM" --set-fmt-video=width=1280,height=720,pixelformat=0 \
           --set-ctrl power_line_frequency=1
         AUDIO_SAMPLE=32000
       fi
-      if [ $C270Present == 1 ] || [ $C910Present == 1 ]; then
+      if [ $C270Present == 1 ]; then
         ITS_OFFSET="-00:00:1.8"
       fi
       if [ $C310Present == 1 ]; then
