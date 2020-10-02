@@ -1700,7 +1700,7 @@ void ReadModeInput(char coding[256], char vsource[256])
     strcpy(coding, "H264");
     strcpy(vsource, "RPi Camera");
     strcpy(CurrentEncoding, "H264");
-    strcpy(CurrentFormat, "4:3");
+    //strcpy(CurrentFormat, "4:3");
     strcpy(CurrentSource, TabSource[0]); // Pi Cam
   } 
   else if (strcmp(ModeInput, "ANALOGCAM") == 0)
