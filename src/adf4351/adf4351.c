@@ -158,7 +158,8 @@ int32_t adf4350_write(uint32_t data)
 {
 	// Nominate pins using WiringPi numbers
 
-	// LE   pin 27 wPi 30
+	// LE   pin 27 wPi 30 For RPi 3
+	// LE   pin 33 wPi 23 For RPi 4
 	// CLK  pin 29 wPi 21
 	// Data pin 31 wPi 22
 
@@ -402,7 +403,8 @@ int64_t adf4350_set_freq(struct adf4350_state *st, uint64_t freq)
 		(pdata->r2_user_settings & (ADF4350_REG2_PD_POLARITY_POS |
 		ADF4350_REG2_LDP_6ns | ADF4350_REG2_LDF_INT_N |
 		ADF4350_REG2_CHARGE_PUMP_CURR_uA(5000) |
-		ADF4350_REG2_MUXOUT(0x7) | ADF4350_REG2_NOISE_MODE(0x9)));
+		ADF4350_REG2_MUXOUT(0x7) | ADF4350_REG2_NOISE_MODE(0x0)));
+//		ADF4350_REG2_MUXOUT(0x7) | ADF4350_REG2_NOISE_MODE(0x9)));
 
 	st->regs[ADF4350_REG3] = pdata->r3_user_settings &
 				 (ADF4350_REG3_12BIT_CLKDIV(0xFFF) |

@@ -214,7 +214,7 @@ void SetConfigParam(char *PathConfigFile,char *Param,char *Value)
   size_t len = 0;
   int read;
   char Command[255];
-  char BackupConfigName[255];
+  char BackupConfigName[90];
   strcpy(BackupConfigName,PathConfigFile);
   strcat(BackupConfigName,".bak");
   FILE *fp=fopen(PathConfigFile,"r");
@@ -1828,7 +1828,7 @@ void ImposeBounds()  // Constrain DisplayFreq and level to physical limits
 
   if (strcmp(osctxt, "adf4351")==0)
   {
-    SourceUpperFreq = 4294967295LL;
+    SourceUpperFreq = 4400000000;
     SourceLowerFreq = 35000000;
     if (level > 3)
     {
