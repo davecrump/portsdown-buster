@@ -72,6 +72,7 @@ void *loop_ts(void *arg) {
     thread_vars_t *thread_vars=(thread_vars_t *)arg;
     uint8_t *err = &thread_vars->thread_err;
     longmynd_config_t *config = thread_vars->config;
+    longmynd_status_t *status = thread_vars->status;
 
     uint8_t *buffer;
     uint16_t len=0;
@@ -99,6 +100,20 @@ void *loop_ts(void *arg) {
             do {
                 if (*err==ERROR_NONE) *err=ftdi_usb_ts_read(buffer, &len, TS_FRAME_SIZE);
             } while (*err==ERROR_NONE && len>2);
+
+            pthread_mutex_lock(&status->mutex);
+                
+            status->service_name[0] = '\0';
+            status->service_provider_name[0] = '\0';
+            status->ts_null_percentage = 100;
+            status->ts_packet_count_nolock = 0;
+
+            for (int j=0; j<NUM_ELEMENT_STREAMS; j++) {
+                status->ts_elementary_streams[j][0] = 0;
+            }
+
+            pthread_mutex_unlock(&status->mutex);
+
            config->ts_reset = false; 
         }
 
@@ -109,10 +124,10 @@ void *loop_ts(void *arg) {
         if ((*err==ERROR_NONE) && (len>2)) {
             ts_write(&buffer[2],len-2);
 
-            if(longmynd_ts_parse_buffer.waiting && longmynd_ts_parse_buffer.buffer != NULL)
-            {                
-                pthread_mutex_lock(&longmynd_ts_parse_buffer.mutex);
-
+            if(longmynd_ts_parse_buffer.waiting
+                && longmynd_ts_parse_buffer.buffer != NULL
+                && pthread_mutex_trylock(&longmynd_ts_parse_buffer.mutex) == 0)
+            {
                 memcpy(longmynd_ts_parse_buffer.buffer, &buffer[2],len-2);
                 longmynd_ts_parse_buffer.length = len-2;
                 pthread_cond_signal(&longmynd_ts_parse_buffer.signal);
@@ -120,7 +135,10 @@ void *loop_ts(void *arg) {
 
                 pthread_mutex_unlock(&longmynd_ts_parse_buffer.mutex);
             }
+
+            status->ts_packet_count_nolock += (len-2);
         }
+
     }
 
     free(buffer);
@@ -140,6 +158,19 @@ static uint32_t crc32_mpeg2(uint8_t *data_ptr, size_t length)
         crc = (crc << 8) ^ crc32_mpeg2_table[((crc >> 24) ^ *data_ptr++) & 0xFF];
     }
     return crc;
+}
+
+static inline void timespec_add_ns(struct timespec *ts, int32_t ns)
+{
+    if((ts->tv_nsec + ns) >= 1e9)
+    {
+        ts->tv_sec = ts->tv_sec + 1;
+        ts->tv_nsec = (ts->tv_nsec + ns) - 1e9;
+    }
+    else
+    {
+        ts->tv_nsec = ts->tv_nsec + ns;
+    }
 }
 
 /* -------------------------------------------------------------------------------------------------- */
@@ -207,6 +238,15 @@ void *loop_ts_parse(void *arg) {
 
     longmynd_ts_parse_buffer.buffer = ts_buffer;
 
+    struct timespec ts;
+
+    /* Set pthread timer on .signal to use monotonic clock */
+    pthread_condattr_t attr;
+    pthread_condattr_init(&attr);
+    pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
+    pthread_cond_init (&longmynd_ts_parse_buffer.signal, &attr);
+    pthread_condattr_destroy(&attr);
+
     while(*err == ERROR_NONE && *thread_vars->main_err_ptr == ERROR_NONE)
     {
         //ts_pat_program_pid = 0x00; // Updated by PAT parse
@@ -218,9 +258,13 @@ void *loop_ts_parse(void *arg) {
         pthread_mutex_lock(&longmynd_ts_parse_buffer.mutex);
         longmynd_ts_parse_buffer.waiting = true;
 
-        while(longmynd_ts_parse_buffer.waiting)
+        while(longmynd_ts_parse_buffer.waiting && *thread_vars->main_err_ptr == ERROR_NONE)
         {
-            pthread_cond_wait(&longmynd_ts_parse_buffer.signal, &longmynd_ts_parse_buffer.mutex);
+            /* Set timer for 100ms */
+            clock_gettime(CLOCK_MONOTONIC, &ts);
+            timespec_add_ns(&ts, 100 * 1000*1000);
+
+            pthread_cond_timedwait(&longmynd_ts_parse_buffer.signal, &longmynd_ts_parse_buffer.mutex, &ts);
         }
 
         pthread_mutex_unlock(&longmynd_ts_parse_buffer.mutex);
