@@ -1,3 +1,6 @@
+202010180
+Update LongMynd RX to latest version to improve reliability
+
 202010160
 Extend ADF4351 Sig Gen to 4.4 GHz and reduce phase noise
 
