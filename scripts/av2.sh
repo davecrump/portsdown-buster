@@ -117,11 +117,16 @@ sudo killall mplayer >/dev/null 2>/dev/null
 
 if [ "$1" == "noaudio" ]; then
   mplayer -nolirc tv:// -tv driver=v4l2:device="$VID_USB":norm=PAL:input=0:width=540:height=432 \
-    -vf scale=540:432 -fs -vo fbdev /dev/fb0
+    -vf scale=540:432 -fs -vo fbdev /dev/fb0 &
 else
   mplayer -nolirc tv:// -tv driver=v4l2:device="$VID_USB":norm=PAL:input=0:alsa:adevice=hw."$EC_AUDIO_DEV",0:amode=1:audiorate=48000:forceaudio:volume=100:immediatemode=0 \
-    -ao alsa:device=hw="$AUDIO_OUT_DEV".0 -vf scale=360:288 -fs -vo fbdev /dev/fb0
+    -ao alsa:device=hw="$AUDIO_OUT_DEV".0 -vf scale=360:288 -fs -vo fbdev /dev/fb0 &
 fi
 
-
+# If a Fushicai EasyCap, adjust the contrast to prevent white crushing
+lsusb | grep -q '1b71:3002'
+if [ $? == 0 ]; then   ## Fushuicai USBTV007
+  sleep 1
+  v4l2-ctl -d "$VID_USB" --set-ctrl contrast=380 >/dev/null 2>/dev/null
+fi
 
