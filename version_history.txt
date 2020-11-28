@@ -1,3 +1,6 @@
+202011280
+Reduce contrast on all EasyCap modes to prevent crushed whites
+
 202010180
 Update LongMynd RX to latest version to improve reliability
 
