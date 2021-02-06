@@ -33,9 +33,10 @@ EOF
 }
 
 MODE_OUTPUT=$(get_config_var modeoutput $PCONFIGFILE)
+MODULATION=$(get_config_var modulation $PCONFIGFILE)
 
   # Stop DATV Express transmitting if required
-  if [ "$MODE_OUTPUT" == "DATVEXPRESS" ]; then
+  if [ "$MODE_OUTPUT" == "DATVEXPRESS" ] && [ "$MODULATION" != "DVB-T" ]; then
     echo "set car off" >> /tmp/expctrl
     echo "set ptt rx" >> /tmp/expctrl
     sudo killall netcat >/dev/null 2>/dev/null
@@ -58,6 +59,7 @@ MODE_OUTPUT=$(get_config_var modeoutput $PCONFIGFILE)
   sudo killall limesdr_send >/dev/null 2>/dev/null
   sudo killall limesdr_dvb >/dev/null 2>/dev/null
   sudo killall sox >/dev/null 2>/dev/null
+  sudo killall dvb_t_stack >/dev/null 2>/dev/null
 
   # Turn the mpeg-2 camera overlay off
   v4l2-ctl -d /dev/video0 --overlay 0 >/dev/null 2>/dev/null

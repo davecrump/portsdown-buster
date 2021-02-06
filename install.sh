@@ -74,7 +74,20 @@ sudo apt-get -y install libasound2-dev sox # 201910230 for LongMynd tone and avc
 sudo apt-get -y install libavcodec-dev libavformat-dev libswscale-dev libavdevice-dev # Required for ffmpegsrc.cpp
 sudo apt-get -y install mplayer vlc # 202004300 Used for video monitor and LongMynd (not libpng12-dev)
 
+sudo apt-get -y install libxml2 libxml2-dev bison flex libcdk5-dev                   # for libiio
+sudo apt-get -y install libaio-dev libserialport-dev libavahi-client-dev             # for libiio
+
+
 sudo pip install pyrtlsdr  #20180101 FreqShow
+
+# Install libiio for DVB-T scripts that refer to Pluto
+cd /home/pi
+git clone https://github.com/analogdevicesinc/libiio.git
+cd libiio
+cmake ./
+make all
+sudo make install
+cd /home/pi
 
 # Enable USB Storage automount in Buster
 echo
@@ -87,16 +100,16 @@ if ! grep -q PrivateMounts=no systemd-udevd.service; then
 fi
 cd /home/pi
 
-# Install LimeSuite 20.01 as at 29 Jan 20
-# Commit c931854ead81307206bce750c17c2301810b5545
+# Install LimeSuite 20.10 as at 25 Jan 21
+# Commit be276996ec3f23b2aadc10543add867d1a55afdd
 echo
 echo "--------------------------------------"
-echo "----- Installing LimeSuite 20.01 -----"
+echo "----- Installing LimeSuite 20.10 -----"
 echo "--------------------------------------"
-wget https://github.com/myriadrf/LimeSuite/archive/c931854ead81307206bce750c17c2301810b5545.zip -O master.zip
+wget https://github.com/myriadrf/LimeSuite/archive/be276996ec3f23b2aadc10543add867d1a55afdd.zip -O master.zip
 unzip -o master.zip
-cp -f -r LimeSuite-c931854ead81307206bce750c17c2301810b5545 LimeSuite
-rm -rf LimeSuite-c931854ead81307206bce750c17c2301810b5545
+cp -f -r LimeSuite-be276996ec3f23b2aadc10543add867d1a55afdd LimeSuite
+rm -rf LimeSuite-be276996ec3f23b2aadc10543add867d1a55afdd
 rm master.zip
 
 # Compile LimeSuite
@@ -116,7 +129,7 @@ sudo /home/pi/LimeSuite/udev-rules/install.sh
 cd /home/pi	
 
 # Record the LimeSuite Version	
-echo "c931854" >/home/pi/LimeSuite/commit_tag.txt
+echo "be27699" >/home/pi/LimeSuite/commit_tag.txt
 
 # Download the LimeSDR Mini firmware/gateware versions
 echo
@@ -124,18 +137,11 @@ echo "------------------------------------------------------"
 echo "----- Downloading LimeSDR Mini Firmware versions -----"
 echo "------------------------------------------------------"
 
-# Previous version
-mkdir -p /home/pi/.local/share/LimeSuite/images/19.01/
-wget https://downloads.myriadrf.org/project/limesuite/19.01/LimeSDR-Mini_HW_1.2_r1.29.rpd -O \
-               /home/pi/.local/share/LimeSuite/images/19.01/LimeSDR-Mini_HW_1.2_r1.29.rpd
-# Current Version from 19.04 (used for some touchscreen-driven updates)
-mkdir -p /home/pi/.local/share/LimeSuite/images/19.04/
-wget https://downloads.myriadrf.org/project/limesuite/19.04/LimeSDR-Mini_HW_1.2_r1.30.rpd -O \
-               /home/pi/.local/share/LimeSuite/images/19.04/LimeSDR-Mini_HW_1.2_r1.30.rpd
-# Current Version from 20.01 (used for LimeUtil updates)
-mkdir -p /home/pi/.local/share/LimeSuite/images/20.01/
-wget https://downloads.myriadrf.org/project/limesuite/20.01/LimeSDR-Mini_HW_1.2_r1.30.rpd -O \
-               /home/pi/.local/share/LimeSuite/images/20.01/LimeSDR-Mini_HW_1.2_r1.30.rpd
+# Current Version from LimeSuite 20.10 
+mkdir -p /home/pi/.local/share/LimeSuite/images/20.10/
+wget https://downloads.myriadrf.org/project/limesuite/20.10/LimeSDR-Mini_HW_1.2_r1.30.rpd -O \
+               /home/pi/.local/share/LimeSuite/images/20.10/LimeSDR-Mini_HW_1.2_r1.30.rpd
+
 # DVB-S/S2 Version
 mkdir -p /home/pi/.local/share/LimeSuite/images/v0.3
 wget https://github.com/natsfr/LimeSDR_DVBSGateware/releases/download/v0.3/LimeSDR-Mini_lms7_trx_HW_1.2_auto.rpd -O \

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Updated by davecrump 201911230 for Buster
+# Updated by davecrump 202102060 for Raspios and Limesuite update
 
 DisplayUpdateMsg() {
   # Delete any old update message image
@@ -163,6 +163,25 @@ sudo apt-get -y dist-upgrade # Upgrade all the installed packages to their lates
 
 sudo apt-get -y install mplayer vlc # 202004300 Used for video monitor and LongMynd
 
+# Install libiio and dependencies if required (used for DVB-T scripts)
+echo
+if [ ! -d  /home/pi/libiio ]; then
+  echo "Installing libiio and dependencies"
+  echo
+  sudo apt-get -y install libxml2 libxml2-dev bison flex libcdk5-dev
+  sudo apt-get -y install libaio-dev libserialport-dev libavahi-client-dev
+  cd /home/pi
+  git clone https://github.com/analogdevicesinc/libiio.git
+  cd libiio
+  cmake ./
+  make all
+  sudo make install
+  cd /home/pi
+else
+  echo "Found libiio installed"
+  echo
+fi
+
 # ---------- Update rpidatv -----------
 
 DisplayUpdateMsg "Step 5 of 10\nDownloading Portsdown SW\n\nXXXXX-----"
@@ -204,6 +223,58 @@ make
 sudo make install
 cd /home/pi
 
+# -----------Update LimeSuite if required -------------
+
+if ! grep -q be27699 /home/pi/LimeSuite/commit_tag.txt; then
+
+  # Remove old LimeSuite
+  rm -rf /home/pi/LimeSuite/
+
+  # Install LimeSuite 20.10 as at 25 Jan 21
+  # Commit be276996ec3f23b2aadc10543add867d1a55afdd
+  echo
+  echo "--------------------------------------"
+  echo "----- Installing LimeSuite 20.10 -----"
+  echo "--------------------------------------"
+  cd /home/pi
+  wget https://github.com/myriadrf/LimeSuite/archive/be276996ec3f23b2aadc10543add867d1a55afdd.zip -O master.zip
+  unzip -o master.zip
+  cp -f -r LimeSuite-be276996ec3f23b2aadc10543add867d1a55afdd LimeSuite
+  rm -rf LimeSuite-be276996ec3f23b2aadc10543add867d1a55afdd
+  rm master.zip
+
+  # Compile LimeSuite
+  cd LimeSuite/
+  mkdir dirbuild
+  cd dirbuild/
+  cmake ../
+  make
+  sudo make install
+  sudo ldconfig
+  cd /home/pi
+
+  # Install udev rules for LimeSuite
+  cd LimeSuite/udev-rules
+  chmod +x install.sh
+  sudo /home/pi/LimeSuite/udev-rules/install.sh
+  cd /home/pi	
+
+  # Record the LimeSuite Version	
+  echo "be27699" >/home/pi/LimeSuite/commit_tag.txt
+
+  # Download the 20.10LimeSDR Mini firmware/gateware version
+  echo
+  echo "------------------------------------------------------"
+  echo "----- Downloading LimeSDR Mini Firmware versions -----"
+  echo "------------------------------------------------------"
+
+  # Current Version from LimeSuite 20.10 
+  mkdir -p /home/pi/.local/share/LimeSuite/images/20.10/
+  wget https://downloads.myriadrf.org/project/limesuite/20.10/LimeSDR-Mini_HW_1.2_r1.30.rpd -O \
+    /home/pi/.local/share/LimeSuite/images/20.10/LimeSDR-Mini_HW_1.2_r1.30.rpd
+fi
+
+
 # Update limesdr_toolbox
 echo "Updating limesdr_toolbox"
 
@@ -213,6 +284,7 @@ cd /home/pi/rpidatv/src/limesdr_toolbox
 # Download and overwrite
 wget https://github.com/F5OEO/libdvbmod/archive/master.zip -O master.zip
 unzip -o master.zip
+rm -rf libdvbmod
 cp -f -r libdvbmod-master libdvbmod
 rm master.zip
 rm -rf libdvbmod-master
