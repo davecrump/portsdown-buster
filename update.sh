@@ -307,6 +307,21 @@ make dvb
 cp limesdr_dvb /home/pi/rpidatv/bin/
 cd /home/pi
 
+echo
+echo "--------------------------------"
+echo "----- Updating dvb_t_stack -----"
+echo "--------------------------------"
+cd /home/pi/rpidatv/src/dvb_t_stack/Release
+make clean
+make
+cp dvb_t_stack /home/pi/rpidatv/bin/dvb_t_stack
+
+# Install the DATV Express firmware files
+cd /home/pi/rpidatv/src/dvb_t_stack
+sudo cp datvexpress16.ihx /lib/firmware/datvexpress/datvexpress16.ihx
+sudo cp datvexpressraw16.rbf /lib/firmware/datvexpress/datvexpressraw16.rbf
+cd /home/pi
+
 # Update LongMynd
 echo
 echo "--------------------------------------------"
