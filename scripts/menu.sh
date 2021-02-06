@@ -860,11 +860,11 @@ do_fec_setup()
 
   FEC=$(whiptail --title "$StrOutputFECTitle" --radiolist \
     "$StrOutputFECContext" 20 78 14 \
-    "1" "DVB-S FEC 1/2" $Radio1 \
-    "2" "DVB-S FEC 2/3" $Radio2 \
-    "3" "DVB-S FEC 3/4" $Radio3 \
-    "5" "DVB-S FEC 5/6" $Radio4 \
-    "7" "DVB-S FEC 7/8" $Radio5 \
+    "1" "DVB-S or DVB-T FEC 1/2" $Radio1 \
+    "2" "DVB-S or DVB-T FEC 2/3" $Radio2 \
+    "3" "DVB-S or DVB-T FEC 3/4" $Radio3 \
+    "5" "DVB-S or DVB-T FEC 5/6" $Radio4 \
+    "7" "DVB-S or DVB-T FEC 7/8" $Radio5 \
     "14" "DVB-S2 QPSK FEC 1/4" $Radio6 \
     "13" "DVB-S2 QPSK FEC 1/3" $Radio7 \
     "12" "DVB-S2 QPSK FEC 1/2" $Radio8 \
@@ -1201,6 +1201,7 @@ do_modulation()
   Radio3=OFF
   Radio4=OFF
   Radio5=OFF
+  Radio6=OFF
 
   case "$MODULATION" in
   DVB-S)
@@ -1218,9 +1219,13 @@ do_modulation()
   32APSK)
     Radio5=ON
   ;;
+  DVB-T)
+    Radio6=ON
+  ;;
   *)
     Radio1=ON
   ;;
+
   esac
 
   MODULATION=$(whiptail --title "SET MODULATION" --radiolist \
@@ -1230,6 +1235,7 @@ do_modulation()
     "8PSK" "DVB-S2 8PSK (Lime only)" $Radio3 \
     "16APSK" "DVB-S2 16APSK (Lime only)" $Radio4 \
     "32APSK" "DVB-S2 32APSK (Lime only)" $Radio5 \
+    "DVB-T" "DVB-T (Lime only)" $Radio6 \
     3>&2 2>&1 1>&3)
 
   if [ $? -eq 0 ]; then                     ## If the selection has changed
@@ -1282,7 +1288,7 @@ do_set_DVBS2_FEC()
 
 do_check_FEC()
 {
-  if [ "$MODULATION" == "DVB-S" ]; then
+  if [ "$MODULATION" == "DVB-S" ] || [ "$MODULATION" == "DVB-T" ]; then
     case "$FEC" in
       14) do_set_DVBS_FEC ;;
       13) do_set_DVBS_FEC ;;
@@ -1383,7 +1389,7 @@ do_transmit()
 do_stop_transmit()
 {
   # Stop DATV Express transmitting if required
-  if [ "$MODE_OUTPUT" == "DATVEXPRESS" ]; then
+  if [ "$MODE_OUTPUT" == "DATVEXPRESS" ] && [ "$MODULATION" != "DVB-T" ] ; then
     echo "set car off" >> /tmp/expctrl
     echo "set ptt rx" >> /tmp/expctrl
     sudo killall netcat >/dev/null 2>/dev/null
@@ -1406,6 +1412,7 @@ do_stop_transmit()
   sudo killall limesdr_send >/dev/null 2>/dev/null
   sudo killall limesdr_dvb >/dev/null 2>/dev/null
   sudo killall sox >/dev/null 2>/dev/null
+  sudo killall /home/pi/rpidatv/bin/dvb_t_stack >/dev/null 2>/dev/null
 
   # Then pause and make sure that avc2ts has really been stopped (needed at high SRs)
   sleep 0.1
@@ -1421,6 +1428,7 @@ do_stop_transmit()
   sudo killall -9 limesdr_send >/dev/null 2>/dev/null
   sudo killall -9 limesdr_dvb >/dev/null 2>/dev/null
   sudo killall -9 sox >/dev/null 2>/dev/null
+  sudo killall -9 /home/pi/rpidatv/bin/dvb_t_stack >/dev/null 2>/dev/null
 
   # Make sure that the PTT is released (required for carrier, Lime and test modes)
   gpio mode $GPIO_PTT out
@@ -3318,7 +3326,9 @@ status="0"
 # Start DATV Express Server if required
 MODE_OUTPUT=$(get_config_var modeoutput $PCONFIGFILE)
 SYMBOLRATEK=$(get_config_var symbolrate $PCONFIGFILE)
-if [ "$MODE_OUTPUT" == "DATVEXPRESS" ]; then
+MODULATION=$(get_config_var modulation $PCONFIGFILE)
+
+if [ "$MODE_OUTPUT" == "DATVEXPRESS" ] && [ "$MODULATION" != "DVB-T" ]; then
   if pgrep -x "express_server" > /dev/null; then
     # Express already running so do nothing
     :

@@ -30,14 +30,16 @@ sudo killall tcanim1v16 >/dev/null 2>/dev/null
 sudo killall netcat >/dev/null 2>/dev/null
 sudo killall -9 netcat >/dev/null 2>/dev/null
 
-############ READ FROM rpidatvconfig.txt and Set PARAMETERS #######################
+############ READ FROM portsdown_config.txt and Set PARAMETERS #######################
 
 MODE_INPUT=$(get_config_var modeinput $PCONFIGFILE)
 TSVIDEOFILE=$(get_config_var tsvideofile $PCONFIGFILE)
 PATERNFILE=$(get_config_var paternfile $PCONFIGFILE)
 UDPOUTADDR=$(get_config_var udpoutaddr $PCONFIGFILE)
+UDPOUTPORT=10000 ###$(get_config_var udpoutport $PCONFIGFILE)
+UDPINPORT=10000 ####$(get_config_var udpinport $PCONFIGFILE)
 CALL=$(get_config_var call $PCONFIGFILE)
-CHANNEL="Portsdown"
+CHANNEL="Portsdown 2020"
 FREQ_OUTPUT=$(get_config_var freqoutput $PCONFIGFILE)
 STREAM_URL=$(get_config_var streamurl $PCONFIGFILE)
 STREAM_KEY=$(get_config_var streamkey $PCONFIGFILE)
@@ -247,38 +249,49 @@ case "$MODE_OUTPUT" in
   ;;
 
   DATVEXPRESS)
-    if pgrep -x "express_server" > /dev/null
-    then
-      # Express already running
-      :
-    else
-      # Stopped, so make sure the control file is not locked and start it
-      # From its own folder otherwise it doesnt read the config file
-      sudo rm /tmp/expctrl >/dev/null 2>/dev/null
-      cd /home/pi/express_server
-      sudo nice -n -40 /home/pi/express_server/express_server  >/dev/null 2>/dev/null &
-      cd /home/pi
-      sleep 5
+    # Read the Gain
+    GAIN=$(get_config_var explevel $PCONFIGFILE)
+      if [ "$MODULATION" != "DVB-T" ]; then                        ## DVB-S
+        if pgrep -x "express_server" > /dev/null
+        then
+          # Express already running
+          :
+      else
+        # Stopped, so make sure the control file is not locked and start it
+        # From its own folder otherwise it doesnt read the config file
+        sudo rm /tmp/expctrl >/dev/null 2>/dev/null
+        cd /home/pi/express_server
+        sudo nice -n -40 /home/pi/express_server/express_server  >/dev/null 2>/dev/null &
+        cd /home/pi
+        sleep 5
+      fi
+
+      # Set output for ffmpeg (avc2ts uses netcat to pipe output from videots)
+      OUTPUT="udp://127.0.0.1:1314?pkt_size=1316&buffer_size=1316"
+      FREQUENCY_OUT=0  # Not used in this mode?
+
+      # Calculate output freq in Hz using floating point
+      FREQ_OUTPUTHZ=`echo - | awk '{print '$FREQ_OUTPUT' * 1000000}'`
+      echo "set freq "$FREQ_OUTPUTHZ >> /tmp/expctrl
+      echo "set fec "$FECNUM"/"$FECDEN >> /tmp/expctrl
+      echo "set srate "$SYMBOLRATE >> /tmp/expctrl
+
+      # Set the ports
+      $PATHSCRIPT"/ctlfilter.sh"
+
+      # Make sure that carrier mode is off
+      echo "set car off" >> /tmp/expctrl
+
+      # Set Gain
+      echo "set level "$GAIN >> /tmp/expctrl
+
+    else                             ## DVB-T
+      sudo killall express_server
+      # Set the output level
+
+      # Sort Express Level for DVB-T, which works the other way
+      let GAIN=44-$GAIN
     fi
-    # Set output for ffmpeg (avc2ts uses netcat to pipe output from videots)
-     OUTPUT="udp://127.0.0.1:1314?pkt_size=1316&buffer_size=1316"
-    FREQUENCY_OUT=0  # Not used in this mode?
-    # Calculate output freq in Hz using floating point
-    FREQ_OUTPUTHZ=`echo - | awk '{print '$FREQ_OUTPUT' * 1000000}'`
-    echo "set freq "$FREQ_OUTPUTHZ >> /tmp/expctrl
-    echo "set fec "$FECNUM"/"$FECDEN >> /tmp/expctrl
-    echo "set srate "$SYMBOLRATE >> /tmp/expctrl
-    # Set the ports
-    $PATHSCRIPT"/ctlfilter.sh"
-
-    # Set the output level
-    GAIN=$(get_config_var explevel $PCONFIGFILE);
-
-    # Set Gain
-    echo "set level "$GAIN >> /tmp/expctrl
-
-    # Make sure that carrier mode is off
-    echo "set car off" >> /tmp/expctrl
   ;;
 
   IP)
@@ -540,15 +553,22 @@ mkfifo videots
 mkfifo netfifo
 mkfifo audioin.wav
 
+OUTPUT_FILE="-o videots"
+
+# Branch to custom file to calculate DVB-T bitrate
+if [ "$MODULATION" == "DVB-T" ]; then
+  source /home/pi/rpidatv/scripts/a_dvb-t.sh
+fi
+
 echo "************************************"
 echo Bitrate TS $BITRATE_TS
 echo Bitrate Video $BITRATE_VIDEO
 echo Size $VIDEO_WIDTH x $VIDEO_HEIGHT at $VIDEO_FPS fps
 echo "************************************"
-echo "ModeINPUT="$MODE_INPUT
-echo "LIME_GAINF="$LIME_GAINF
-
-OUTPUT_FILE="-o videots"
+echo "Modulation = "$MODULATION
+echo "ModeINPUT = "$MODE_INPUT
+echo "LIME_GAINF = "$LIME_GAINF
+echo
 
 case "$MODE_INPUT" in
 
@@ -588,30 +608,49 @@ case "$MODE_INPUT" in
     # Free up Pi Camera for direct OMX Coding by removing driver
     sudo modprobe -r bcm2835_v4l2
 
-    # Set up the means to transport the stream out of the unit
-    case "$MODE_OUTPUT" in
-      "STREAMER")
-        : # Do nothing - this option should never be called (see MPEG-2)
-      ;;
-      "IP")
-        OUTPUT_FILE=""
-      ;;
-      "DATVEXPRESS")
-        echo "set ptt tx" >> /tmp/expctrl
-        sudo nice -n -30 netcat -u -4 127.0.0.1 1314 < videots & 
-      ;;
-      "LIMEMINI" | "LIMEUSB" | "LIMEDVB")
-        $PATHRPI"/limesdr_dvb" -i videots -s "$SYMBOLRATE_K"000 -f $FECNUM/$FECDEN -r $UPSAMPLE -m $MODTYPE -c $CONSTLN $PILOTS $FRAMES \
-          -t "$FREQ_OUTPUT"e6 -g $LIME_GAINF -q $CAL $CUSTOM_FPGA -D $DIGITAL_GAIN -e $BAND_GPIO $LIMETYPE &
-      ;;
-      "COMPVID")
-        OUTPUT_FILE="/dev/null" #Send avc2ts output to /dev/null
-      ;;
-      *)
-        # For IQ, QPSKRF, DIGITHIN and DTX1
-        sudo $PATHRPI"/rpidatv" -i videots -s $SYMBOLRATE_K -c $FECNUM"/"$FECDEN -f $FREQUENCY_OUT -p $GAIN -m $MODE -x $PIN_I -y $PIN_Q &
-      ;;
-    esac
+    if [ "$MODULATION" != "DVB-T" ]; then         ############ DVB-S/S2
+      # Set up the means to transport the stream out of the unit
+      case "$MODE_OUTPUT" in
+        "STREAMER")
+          : # Do nothing - this option should never be called (see MPEG-2)
+        ;;
+        "IP")
+          OUTPUT_FILE=""
+        ;;
+        "DATVEXPRESS")
+          echo "set ptt tx" >> /tmp/expctrl
+          sudo nice -n -30 netcat -u -4 127.0.0.1 1314 < videots & 
+        ;;
+        "LIMEMINI" | "LIMEUSB" | "LIMEDVB")
+          $PATHRPI"/limesdr_dvb" -i videots -s "$SYMBOLRATE_K"000 -f $FECNUM/$FECDEN -r $UPSAMPLE -m $MODTYPE -c $CONSTLN $PILOTS $FRAMES \
+            -t "$FREQ_OUTPUT"e6 -g $LIME_GAINF -q $CAL $CUSTOM_FPGA -D $DIGITAL_GAIN -e $BAND_GPIO $LIMETYPE &
+        ;;
+        "COMPVID")
+          OUTPUT_FILE="/dev/null" #Send avc2ts output to /dev/null
+        ;;
+        *)
+          # For IQ, QPSKRF, DIGITHIN and DTX1
+          sudo $PATHRPI"/rpidatv" -i videots -s $SYMBOLRATE_K -c $FECNUM"/"$FECDEN -f $FREQUENCY_OUT -p $GAIN -m $MODE -x $PIN_I -y $PIN_Q &
+        ;;
+      esac
+    else                                        ############ DVB-T
+      OUTPUT_FILE=""
+      case "$MODE_OUTPUT" in
+        "IP")
+          OUTPUT_FILE=""
+        ;;
+        "DATVEXPRESS")
+          OUTPUT_IP="-n 127.0.0.1:1314"
+          /home/pi/rpidatv/bin/dvb_t_stack -m $CONSTLN -f $FREQ_OUTPUTHZ -a $GAIN -r express \
+            -g 1/"$GUARD" -b $SYMBOLRATE -p 1314 -e "$FECNUM"/"$FECDEN" -n $PLUTOIP -i /dev/null &
+        ;;
+        "LIMEMINI")
+          OUTPUT_IP="-n 127.0.0.1:1314"
+          /home/pi/rpidatv/bin/dvb_t_stack -m $CONSTLN -f $FREQ_OUTPUTHZ -a $LIME_GAINF -r lime \
+            -g 1/"$GUARD" -b $SYMBOLRATE -p 1314 -e "$FECNUM"/"$FECDEN" -n $PLUTOIP -i /dev/null &
+        ;;
+      esac
+    fi
 
     # Now generate the stream
 
@@ -808,28 +847,49 @@ fi
     RESULT="$?"
     if [ "$RESULT" -eq 0 ]; then
       sudo modprobe -r bcm2835_v4l2
-    fi    
+    fi
+
+
 
     # Set up means to transport of stream out of unit
-    case "$MODE_OUTPUT" in
-      "IP")
-        OUTPUT_FILE=""
-      ;;
-      "DATVEXPRESS")
-        echo "set ptt tx" >> /tmp/expctrl
-        sudo nice -n -30 netcat -u -4 127.0.0.1 1314 < videots &
-      ;;
-      "COMPVID")
-        OUTPUT_FILE="/dev/null" #Send avc2ts output to /dev/null
-      ;;
-      "LIMEMINI" | "LIMEUSB" | "LIMEDVB")
-        $PATHRPI"/limesdr_dvb" -i videots -s "$SYMBOLRATE_K"000 -f $FECNUM/$FECDEN -r $UPSAMPLE -m $MODTYPE -c $CONSTLN $PILOTS $FRAMES \
-          -t "$FREQ_OUTPUT"e6 -g $LIME_GAINF -q $CAL $CUSTOM_FPGA -D $DIGITAL_GAIN -e $BAND_GPIO $LIMETYPE &
-      ;;
-      *)
-        sudo  $PATHRPI"/rpidatv" -i videots -s $SYMBOLRATE_K -c $FECNUM"/"$FECDEN -f $FREQUENCY_OUT -p $GAIN -m $MODE -x $PIN_I -y $PIN_Q &
-      ;;
-    esac
+    if [ "$MODULATION" != "DVB-T" ]; then      ########### DVB-S/S2
+      case "$MODE_OUTPUT" in
+        "IP")
+          OUTPUT_FILE=""
+        ;;
+        "DATVEXPRESS")
+          echo "set ptt tx" >> /tmp/expctrl
+          sudo nice -n -30 netcat -u -4 127.0.0.1 1314 < videots &
+        ;;
+        "COMPVID")
+          OUTPUT_FILE="/dev/null" #Send avc2ts output to /dev/null
+        ;;
+        "LIMEMINI" | "LIMEUSB" | "LIMEDVB")
+          $PATHRPI"/limesdr_dvb" -i videots -s "$SYMBOLRATE_K"000 -f $FECNUM/$FECDEN -r $UPSAMPLE -m $MODTYPE -c $CONSTLN $PILOTS $FRAMES \
+            -t "$FREQ_OUTPUT"e6 -g $LIME_GAINF -q $CAL $CUSTOM_FPGA -D $DIGITAL_GAIN -e $BAND_GPIO $LIMETYPE &
+        ;;
+        *)
+          sudo  $PATHRPI"/rpidatv" -i videots -s $SYMBOLRATE_K -c $FECNUM"/"$FECDEN -f $FREQUENCY_OUT -p $GAIN -m $MODE -x $PIN_I -y $PIN_Q &
+        ;;
+      esac
+    else                                      ######### DVB-T
+      OUTPUT_FILE=""
+      case "$MODE_OUTPUT" in
+        "IP")
+          OUTPUT_FILE=""
+        ;;
+        "DATVEXPRESS")
+          OUTPUT_IP="-n 127.0.0.1:1314"
+          /home/pi/rpidatv/bin/dvb_t_stack -m $CONSTLN -f $FREQ_OUTPUTHZ -a $GAIN -r express \
+            -g 1/"$GUARD" -b $SYMBOLRATE -p 1314 -e "$FECNUM"/"$FECDEN" -i /dev/null &
+        ;;
+        "LIMEMINI")
+          OUTPUT_IP="-n 127.0.0.1:1314"
+          /home/pi/rpidatv/bin/dvb_t_stack -m $CONSTLN -f $FREQ_OUTPUTHZ -a $LIME_GAINF -r lime \
+            -g 1/"$GUARD" -b $SYMBOLRATE -p 1314 -e "$FECNUM"/"$FECDEN" -i /dev/null &
+        ;;
+      esac
+    fi
 
     # Stop fbcp, because it conficts with avc2ts desktop
     killall fbcp
@@ -1016,25 +1076,45 @@ fi
     fi    
 
     # Set up means to transport of stream out of unit
-    case "$MODE_OUTPUT" in
-      "STREAMER")
-        : # Do nothing.  All done below
-      ;;
-      "IP")
-        OUTPUT_FILE=""
-      ;;
-      "DATVEXPRESS")
-        echo "set ptt tx" >> /tmp/expctrl
-        sudo nice -n -30 netcat -u -4 127.0.0.1 1314 < videots &
-      ;;
-      "LIMEMINI" | "LIMEUSB" | "LIMEDVB")
-        $PATHRPI"/limesdr_dvb" -i videots -s "$SYMBOLRATE_K"000 -f $FECNUM/$FECDEN -r $UPSAMPLE -m $MODTYPE -c $CONSTLN $PILOTS $FRAMES \
-          -t "$FREQ_OUTPUT"e6 -g $LIME_GAINF -q $CAL $CUSTOM_FPGA -D $DIGITAL_GAIN -e $BAND_GPIO $LIMETYPE &
-      ;;
-      *)
-        sudo $PATHRPI"/rpidatv" -i videots -s $SYMBOLRATE_K -c $FECNUM"/"$FECDEN -f $FREQUENCY_OUT -p $GAIN -m $MODE -x $PIN_I -y $PIN_Q &
-      ;;
-    esac
+    if [ "$MODULATION" != "DVB-T" ]; then   ######### DVB-S/S2
+      case "$MODE_OUTPUT" in
+        "STREAMER")
+          : # Do nothing.  All done below
+        ;;
+        "IP")
+          OUTPUT_FILE=""
+        ;;
+        "DATVEXPRESS")
+          echo "set ptt tx" >> /tmp/expctrl
+          sudo nice -n -30 netcat -u -4 127.0.0.1 1314 < videots &
+        ;;
+        "LIMEMINI" | "LIMEUSB" | "LIMEDVB")
+          $PATHRPI"/limesdr_dvb" -i videots -s "$SYMBOLRATE_K"000 -f $FECNUM/$FECDEN -r $UPSAMPLE -m $MODTYPE -c $CONSTLN $PILOTS $FRAMES \
+            -t "$FREQ_OUTPUT"e6 -g $LIME_GAINF -q $CAL $CUSTOM_FPGA -D $DIGITAL_GAIN -e $BAND_GPIO $LIMETYPE &
+        ;;
+        *)
+          sudo $PATHRPI"/rpidatv" -i videots -s $SYMBOLRATE_K -c $FECNUM"/"$FECDEN -f $FREQUENCY_OUT -p $GAIN -m $MODE -x $PIN_I -y $PIN_Q &
+        ;;
+      esac
+    else                                      ######### DVB-T
+      OUTPUT_FILE=""
+      case "$MODE_OUTPUT" in
+        "IP")
+          OUTPUT_FILE=""
+        ;;
+        "DATVEXPRESS")
+          OUTPUT_IP="-n 127.0.0.1:1314"
+          /home/pi/rpidatv/bin/dvb_t_stack -m $CONSTLN -f $FREQ_OUTPUTHZ -a $GAIN -r express \
+            -g 1/"$GUARD" -b $SYMBOLRATE -p 1314 -e "$FECNUM"/"$FECDEN" -i /dev/null &
+        ;;
+        "LIMEMINI")
+          OUTPUT_IP="-n 127.0.0.1:1314"
+          /home/pi/rpidatv/bin/dvb_t_stack -m $CONSTLN -f $FREQ_OUTPUTHZ -a $LIME_GAINF -r lime \
+            -g 1/"$GUARD" -b $SYMBOLRATE -p 1314 -e "$FECNUM"/"$FECDEN" -i /dev/null &
+        ;;
+      esac
+    fi
+
 
     # Now generate the stream
 
@@ -1137,26 +1217,44 @@ fi
     fi    
 
     # Set up means to transport of stream out of unit
-    case "$MODE_OUTPUT" in
-      "IP")
-        OUTPUT_FILE=""
-      ;;
-      "DATVEXPRESS")
-        echo "set ptt tx" >> /tmp/expctrl
-        sudo nice -n -30 netcat -u -4 127.0.0.1 1314 < videots &
-      ;;
-      "COMPVID")
-        OUTPUT_FILE="/dev/null" #Send avc2ts output to /dev/null
-      ;;
-      "LIMEMINI" | "LIMEUSB" | "LIMEDVB")
-        $PATHRPI"/limesdr_dvb" -i videots -s "$SYMBOLRATE_K"000 -f $FECNUM/$FECDEN -r $UPSAMPLE -m $MODTYPE -c $CONSTLN $PILOTS $FRAMES \
-          -t "$FREQ_OUTPUT"e6 -g $LIME_GAINF -q $CAL $CUSTOM_FPGA -D $DIGITAL_GAIN -e $BAND_GPIO $LIMETYPE &
-      ;;
-      *)
-        sudo nice -n -30 $PATHRPI"/rpidatv" -i videots -s $SYMBOLRATE_K -c $FECNUM"/"$FECDEN -f $FREQUENCY_OUT -p $GAIN -m $MODE -x $PIN_I -y $PIN_Q &
-      ;;
-
-    esac
+    if [ "$MODULATION" != "DVB-T" ]; then                    ######### DVB-S/S2
+      case "$MODE_OUTPUT" in
+        "IP")
+          OUTPUT_FILE=""
+        ;;
+        "DATVEXPRESS")
+          echo "set ptt tx" >> /tmp/expctrl
+          sudo nice -n -30 netcat -u -4 127.0.0.1 1314 < videots &
+        ;;
+        "COMPVID")
+          OUTPUT_FILE="/dev/null" #Send avc2ts output to /dev/null
+        ;;
+        "LIMEMINI" | "LIMEUSB" | "LIMEDVB")
+          $PATHRPI"/limesdr_dvb" -i videots -s "$SYMBOLRATE_K"000 -f $FECNUM/$FECDEN -r $UPSAMPLE -m $MODTYPE -c $CONSTLN $PILOTS $FRAMES \
+            -t "$FREQ_OUTPUT"e6 -g $LIME_GAINF -q $CAL $CUSTOM_FPGA -D $DIGITAL_GAIN -e $BAND_GPIO $LIMETYPE &
+        ;;
+        *)
+          sudo nice -n -30 $PATHRPI"/rpidatv" -i videots -s $SYMBOLRATE_K -c $FECNUM"/"$FECDEN -f $FREQUENCY_OUT -p $GAIN -m $MODE -x $PIN_I -y $PIN_Q &
+        ;;
+      esac
+    else                                                    ########### DVB-T
+      OUTPUT_FILE=""
+      case "$MODE_OUTPUT" in
+        "IP")
+          OUTPUT_FILE=""
+        ;;
+        "DATVEXPRESS")
+          OUTPUT_IP="-n 127.0.0.1:1314"
+          /home/pi/rpidatv/bin/dvb_t_stack -m $CONSTLN -f $FREQ_OUTPUTHZ -a $GAIN -r express \
+            -g 1/"$GUARD" -b $SYMBOLRATE -p 1314 -e "$FECNUM"/"$FECDEN" -i /dev/null &
+        ;;
+        "LIMEMINI")
+          OUTPUT_IP="-n 127.0.0.1:1314"
+          /home/pi/rpidatv/bin/dvb_t_stack -m $CONSTLN -f $FREQ_OUTPUTHZ -a $LIME_GAINF -r lime \
+            -g 1/"$GUARD" -b $SYMBOLRATE -p 1314 -e "$FECNUM"/"$FECDEN" -i /dev/null &
+        ;;
+      esac
+    fi
 
     # Pause to allow test card to be displayed
     sleep 1
@@ -1183,22 +1281,38 @@ fi
   "IPTSIN")
 
     # Set up means to transport of stream out of unit
-    case "$MODE_OUTPUT" in
-      "DATVEXPRESS")
-        echo "set ptt tx" >> /tmp/expctrl
-        sudo nice -n -30 nc -u -4 127.0.0.1 1314 < videots &
-      ;;
-      "COMPVID")
-        : # Do nothing.  Mode does not work yet
-      ;;
-      "LIMEMINI" | "LIMEUSB" | "LIMEDVB")
-      $PATHRPI"/limesdr_dvb" -i videots -s "$SYMBOLRATE_K"000 -f $FECNUM/$FECDEN -r $UPSAMPLE -m $MODTYPE -c $CONSTLN $PILOTS $FRAMES \
-        -t "$FREQ_OUTPUT"e6 -g $LIME_GAINF -q $CAL $CUSTOM_FPGA -D $DIGITAL_GAIN -e $BAND_GPIO $LIMETYPE &
-      ;;
-      *)
-        sudo $PATHRPI"/rpidatv" -i videots -s $SYMBOLRATE_K -c $FECNUM"/"$FECDEN -f $FREQUENCY_OUT -p $GAIN -m $MODE -x $PIN_I -y $PIN_Q &
-      ;;
-    esac
+    if [ "$MODULATION" != "DVB-T" ]; then                    ######### DVB-S/S2
+      case "$MODE_OUTPUT" in
+        "DATVEXPRESS")
+          echo "set ptt tx" >> /tmp/expctrl
+          sudo nice -n -30 nc -u -4 127.0.0.1 1314 < videots &
+        ;;
+        "COMPVID")
+          : # Do nothing.  Mode does not work yet
+        ;;
+        "LIMEMINI" | "LIMEUSB" | "LIMEDVB")
+        $PATHRPI"/limesdr_dvb" -i videots -s "$SYMBOLRATE_K"000 -f $FECNUM/$FECDEN -r $UPSAMPLE -m $MODTYPE -c $CONSTLN $PILOTS $FRAMES \
+          -t "$FREQ_OUTPUT"e6 -g $LIME_GAINF -q $CAL $CUSTOM_FPGA -D $DIGITAL_GAIN -e $BAND_GPIO $LIMETYPE &
+        ;;
+        *)
+          sudo $PATHRPI"/rpidatv" -i videots -s $SYMBOLRATE_K -c $FECNUM"/"$FECDEN -f $FREQUENCY_OUT -p $GAIN -m $MODE -x $PIN_I -y $PIN_Q &
+        ;;
+      esac
+    else                                                    ########### DVB-T
+      OUTPUT_FILE=""
+      case "$MODE_OUTPUT" in
+        "DATVEXPRESS")
+          OUTPUT_IP="-n 127.0.0.1:1314"
+          /home/pi/rpidatv/bin/dvb_t_stack -m $CONSTLN -f $FREQ_OUTPUTHZ -a $GAIN -r express \
+            -g 1/"$GUARD" -b $SYMBOLRATE -p $UDPINPORT -e "$FECNUM"/"$FECDEN" -i /dev/null &
+        ;;
+        "LIMEMINI")
+          OUTPUT_IP="-n 127.0.0.1:1314"
+          /home/pi/rpidatv/bin/dvb_t_stack -m $CONSTLN -f $FREQ_OUTPUTHZ -a $LIME_GAINF -r lime \
+            -g 1/"$GUARD" -b $SYMBOLRATE -p $UDPINPORT -e "$FECNUM"/"$FECDEN" -i /dev/null &
+        ;;
+      esac
+    fi
 
     # Now generate the stream
 
@@ -1820,7 +1934,7 @@ case "$MODE_OUTPUT" in
       cd ~/dvbsdr/scripts
       gst-launch-1.0 udpsrc address=$LKVUDP port=$LKVPORT \
         '!' video/mpegts '!' tsdemux name=dem dem. '!' queue '!' h264parse '!' omxh264dec \
-        '!' nvvidconv \
+        '!' nvvidconv interpolation-method=2 \
         '!' 'video/x-raw(memory:NVMM), width=(int)$VIDEO_WIDTH, height=(int)$VIDEO_HEIGHT, format=(string)I420' \
         '!' omxh265enc control-rate=2 bitrate=$VIDEOBITRATE peak-bitrate=$VIDEOPEAKBITRATE preset-level=3 iframeinterval=100 \
         '!' 'video/x-h265,stream-format=(string)byte-stream' '!' mux. dem. '!' queue \
@@ -1924,7 +2038,7 @@ EOM
       cd ~/dvbsdr/scripts
       gst-launch-1.0 udpsrc address=$LKVUDP port=$LKVPORT \
         '!' video/mpegts '!' tsdemux name=dem dem. '!' queue '!' h264parse '!' omxh264dec \
-        '!' nvvidconv \
+        '!' nvvidconv interpolation-method=2 \
         '!' 'video/x-raw(memory:NVMM), width=(int)$VIDEO_WIDTH, height=(int)$VIDEO_HEIGHT, format=(string)I420' \
         '!' omxh264enc vbv-size=15 control-rate=2 bitrate=$VIDEOBITRATE peak-bitrate=$VIDEOPEAKBITRATE \
         insert-sps-pps=1 insert-vui=1 cabac-entropy-coding=1 preset-level=3 profile=8 iframeinterval=100 \

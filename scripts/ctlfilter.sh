@@ -6,7 +6,7 @@
 
 # Called by a.sh in IQ and DATVEXPRESS modes to switch in correct
 # Nyquist Filter, band/transverter switching and attenuator level
-# Written by Dave G8GKQ 20170209.  Last amended 201802040
+# Written by Dave G8GKQ 20170209.  Last amended 202102060
 
 # SR Outputs:
 
@@ -39,7 +39,6 @@
 ############ Set Environment Variables ###############
 
 PATHSCRIPT=/home/pi/rpidatv/scripts
-CONFIGFILE=$PATHSCRIPT"/rpidatvconfig.txt"
 PCONFIGFILE="/home/pi/rpidatv/scripts/portsdown_config.txt"
 PATH_ATTEN="/home/pi/rpidatv/bin/set_attenuator "
 
@@ -288,7 +287,9 @@ esac
 ################ If DATV EXPRESS in use, Set Ports ########
 
 MODE_OUTPUT=$(get_config_var modeoutput $PCONFIGFILE)
-if [ $MODE_OUTPUT = "DATVEXPRESS" ]; then
+MODULATION=$(get_config_var modulation $PCONFIGFILE)
+
+if [ $MODE_OUTPUT = "DATVEXPRESS" ] && [ "$MODULATION" != "DVB-T" ]; then
   echo "set port "$EXPPORTS >> /tmp/expctrl
 fi
 

@@ -181,7 +181,7 @@ char TabModeOPtext[14][31]={"Portsdown", " Ugly ", "Express", "Lime USB", "BATC^
 char TabAtten[4][15] = {"NONE", "PE4312", "PE43713", "HMC1119"};
 char CurrentModeOP[31] = "QPSKRF";
 char CurrentModeOPtext[31] = " UGLY ";
-char TabTXMode[6][255] = {"DVB-S", "Carrier", "S2QPSK", "8PSK", "16APSK", "32APSK"};
+char TabTXMode[7][255] = {"DVB-S", "Carrier", "S2QPSK", "8PSK", "16APSK", "32APSK", "DVB-T"};
 char CurrentTXMode[255] = "DVB-S";
 char CurrentPilots[7] = "off";
 char CurrentFrames[7] = "long";
@@ -199,6 +199,8 @@ int CurrentBand = 2; // 0 thru 8
 char KeyboardReturn[64];
 char FreqBtext[31];
 char MenuText[5][63];
+char Guard[7] = "32";
+char DVBTQAM[7] = "qpsk";
 
 // Valid Input Modes:
 // "CAMMPEG-2", "CAMH264", "PATERNAUDIO", "ANALOGCAM" ,"CARRIER" ,"CONTEST"
@@ -1202,95 +1204,51 @@ void ExecuteUpdate(int NoButton)
 
 void LimeFWUpdate(int button)
 {
-  if (GetLinuxVer() == 9)  // Stretch and 1.29
+  // Buster and selectable FW.  0 was 1.29. 1 = 1.30, 2 = Custom, 3 = Default for LimeNET Micro
+  if (CheckLimeUSBConnect() == 0)  // LimeUSB Connected
   {
-    MsgBox4("Please wait", " ", " ", " ");
-    if ((CheckLimeMiniConnect() == 0) || (CheckLimeUSBConnect() == 0))
+    MsgBox4("Upgrading Lime USB", "To latest standard", "Using LimeUtil 20.10", "Please Wait");
+    system("LimeUtil --update");
+    usleep(250000);
+    MsgBox4("Upgrade Complete", " ", "Touch Screen to Continue" ," ");
+  }
+  else if (LimeNETMicroDet == 1)  // LimeNET Micro Connected
+  {
+    MsgBox4("Upgrading LimeNET Micro", "To latest standard", "Using LimeUtil 20.10", "Please Wait");
+    system("LimeUtil --update");
+    usleep(250000);
+    MsgBox4("Upgrade Complete", " ", "Touch Screen to Continue" ," ");
+  }
+  else if ((CheckLimeMiniConnect() == 0) && (LimeNETMicroDet == 0))  // Lime Mini Connected
+  {
+    switch (button)
     {
-      if (CheckGoogle() == 0)
+    case 1:
+    case 3:
+      MsgBox4("Upgrading Lime Firmware", "to 1.30", " ", " ");
+      system("sudo LimeUtil --fpga=/home/pi/.local/share/LimeSuite/images/20.10/LimeSDR-Mini_HW_1.2_r1.30.rpd");
+      if (LimeGWRev() == 30)
       {
-        MsgBox4("Upgrading Lime Firmware", " ", " ", " ");
-        system("LimeUtil --update");
-        usleep(250000);
-        if (LimeGWRev() == 29)
-        {
-          MsgBox4("Firmware Upgrade Successful", "Now at Gateware 1.29", "Touch Screen to Continue" ," ");
-        }
-        else
-        {
-          MsgBox4("Firmware Upgrade Unsuccessful", "Further Investigation required", "Touch Screen to Continue" ," ");
-        }
+        MsgBox4("Firmware Upgrade Successful", "Now at Gateware 1.30", "Touch Screen to Continue" ," ");
       }
       else
       {
-        MsgBox4("No Internet Connection", "Please connect before upgrading", "Touch Screen to Continue" ," ");
+        MsgBox4("Firmware Upgrade Unsuccessful", "Further Investigation required", "Touch Screen to Continue" ," ");
       }
-    }
-    else
-    {
-      MsgBox4("No Lime Connected", " ", "Touch Screen to Continue" ," ");
+      break;
+    case 2:
+      MsgBox4("Upgrading Lime Firmware", "to Custom DVB", " ", " ");
+      system("sudo LimeUtil --force --fpga=/home/pi/.local/share/LimeSuite/images/v0.3/LimeSDR-Mini_lms7_trx_HW_1.2_auto.rpd");
+      MsgBox4("Firmware Upgrade Complete", "DVB", "Touch Screen to Continue" ," ");
+      break;
+    default:
+      printf("Lime Update button selection error\n");
+      break;
     }
   }
-  else  // Buster and selectable FW.  0 = 1.29. 1 = 1.30, 2 = Custom, 3 = Default for LimeNET Micro
+  else
   {
-    if (CheckLimeUSBConnect() == 0)  // LimeUSB Connected
-    {
-      MsgBox4("Upgrading Lime USB", "To latest standard", "Using LimeUtil 20.01", "Please Wait");
-      system("LimeUtil --update");
-      usleep(250000);
-      MsgBox4("Upgrade Complete", " ", "Touch Screen to Continue" ," ");
-    }
-    else if (LimeNETMicroDet == 1)  // LimeNET Micro Connected
-    {
-      MsgBox4("Upgrading LimeNET Micro", "To latest standard", "Using LimeUtil 20.01", "Please Wait");
-      system("LimeUtil --update");
-      usleep(250000);
-      MsgBox4("Upgrade Complete", " ", "Touch Screen to Continue" ," ");
-    }
-    else if ((CheckLimeMiniConnect() == 0) && (LimeNETMicroDet == 0))  // Lime Mini Connected
-    {
-      switch (button)
-      {
-      case 0:
-        MsgBox4("Upgrading Lime Firmware", "to 1.29", " ", " ");
-        system("sudo LimeUtil --fpga=/home/pi/.local/share/LimeSuite/images/19.01/LimeSDR-Mini_HW_1.2_r1.29.rpd");
-        if (LimeGWRev() == 29)
-        {
-          MsgBox4("Firmware Upgrade Successful", "Now at Gateware 1.29", "Touch Screen to Continue" ," ");
-        }
-        else
-        {
-          MsgBox4("Firmware Upgrade Unsuccessful", "Further Investigation required", "Touch Screen to Continue" ," ");
-        }
-        break;
-      case 1:
-      case 3:
-        MsgBox4("Upgrading Lime Firmware", "to 1.30", " ", " ");
-        system("sudo LimeUtil --fpga=/home/pi/.local/share/LimeSuite/images/20.01/LimeSDR-Mini_HW_1.2_r1.30.rpd");
-
-        if (LimeGWRev() == 30)
-        {
-          MsgBox4("Firmware Upgrade Successful", "Now at Gateware 1.30", "Touch Screen to Continue" ," ");
-        }
-        else
-        {
-          MsgBox4("Firmware Upgrade Unsuccessful", "Further Investigation required", "Touch Screen to Continue" ," ");
-        }
-        break;
-      case 2:
-        MsgBox4("Upgrading Lime Firmware", "to Custom DVB", " ", " ");
-        system("sudo LimeUtil --force --fpga=/home/pi/.local/share/LimeSuite/images/v0.3/LimeSDR-Mini_lms7_trx_HW_1.2_auto.rpd");
-        MsgBox4("Firmware Upgrade Complete", "DVB", "Touch Screen to Continue" ," ");
-        break;
-      default:
-        printf("Lime Update button selection error\n");
-        break;
-      }
-    }
-    else
-    {
-      MsgBox4("No LimeSDR Detected", " ", "Touch Screen to Continue", " ");
-    }
+    MsgBox4("No LimeSDR Detected", " ", "Touch Screen to Continue", " ");
   }
   wait_touch();
 }
@@ -2042,27 +2000,24 @@ void ReadModeOutput(char Moutput[256])
     strcpy(Moutput, "notset");
   }
 
-  if (GetLinuxVer() == 10)  // Buster
-  {  
-    // Read LimeCal freq
-    GetConfigParam(PATH_LIME_CAL, "limecalfreq", LimeCalFreqText);
-    LimeCalFreq = atof(LimeCalFreqText);
-    // And read LimeRFE state
-    GetConfigParam(PATH_PCONFIG, "limerfe", LimeRFEStateText);
-    if (strcmp(LimeRFEStateText, "enabled") == 0)
-    {
-      LimeRFEState = 1;
-    }
-    else
-    {
-      LimeRFEState = 0;
-    }
+  // Read LimeCal freq
+  GetConfigParam(PATH_LIME_CAL, "limecalfreq", LimeCalFreqText);
+  LimeCalFreq = atof(LimeCalFreqText);
+
+  // And read LimeRFE state
+  GetConfigParam(PATH_PCONFIG, "limerfe", LimeRFEStateText);
+  if (strcmp(LimeRFEStateText, "enabled") == 0)
+  {
+    LimeRFEState = 1;
   }
   else
   {
     LimeRFEState = 0;
   }
 
+  // Read DVB-T Guard Interval and QAM (When implemented)
+  //GetConfigParam(PATH_PCONFIG, "guard", Guard);
+  //GetConfigParam(PATH_PCONFIG, "qam", DVBTQAM);
 }
 
 /***************************************************************************//**
@@ -2376,6 +2331,181 @@ void GetSerNo(char SerNo[256])
   /* close */
   pclose(fp);
 }
+
+/***************************************************************************//**
+ * @brief Calculates the TS bitrate for the current settings
+ *
+ * @param nil.  Looks up globals
+ *
+ * @return int Bitrate.  -1  indicates calculation error
+*******************************************************************************/
+
+int CalcTSBitrate()
+{
+  char Value[127] = " ";
+  float Bitrate = 0;
+  int BitrateK = 0;
+  int guard = 32;
+  int BitsPerSymbol = 2;
+  int fec = 99;
+  int fecden = 100;
+  char Constellation[15];
+  FILE *fp;
+  char BitRateCommand[255];
+
+  // Look up raw SR or bandwidth
+  GetConfigParam(PATH_PCONFIG, "symbolrate", Value);
+  BitrateK = atoi(Value);
+  Bitrate = 1000 * atof(Value);
+
+  strcpy(Value, "99");
+  GetConfigParam(PATH_PCONFIG, "fec", Value);
+  fec = atoi(Value);
+
+  if ((strcmp(CurrentTXMode, "S2QPSK") == 0) || (strcmp(CurrentTXMode, "8PSK") == 0)
+   || (strcmp(CurrentTXMode, "16APSK") == 0) || (strcmp(CurrentTXMode, "32APSK") == 0))
+  {
+    // First determine FEC parameters
+    if((fec == 14) || (fec == 13) || (fec == 12)) // 1/4, 1/3, or 1/2
+    {
+      fecden = fec - 10;
+      fec = 1;
+    }
+    else if (fec == 23)
+    {
+      fec = 2;
+      fecden = 3;
+    }
+    else if ((fec == 34) || (fec == 35))
+    {
+      fecden = fec - 30;
+      fec = 3;
+    }
+    else if (fec == 56)
+    {
+      fec = 5;
+      fecden = 6;
+    }
+    else if (fec == 89)
+    {
+      fec = 8;
+      fecden = 9;
+    }
+    else if (fec == 91)
+    {
+      fec = 9;
+      fecden = 10;
+    }
+    else
+    {
+      return -1; // invalid FEC
+    }
+
+    // Now determine Bits per symbol
+    if (strcmp(CurrentTXMode, "S2QPSK") == 0)
+    {
+      strcpy(Constellation, "QPSK");
+    }
+    else if (strcmp(CurrentTXMode, "8PSK") == 0)
+    {
+      strcpy(Constellation, "8PSK");
+    }
+    else if (strcmp(CurrentTXMode, "16APSK") == 0)
+    {
+      strcpy(Constellation, "16APSK");
+    }
+    else if (strcmp(CurrentTXMode, "32APSK") == 0)
+    {
+      strcpy(Constellation, "32APSK");
+    }
+
+    strcpy(BitRateCommand, "/home/pi/rpidatv/bin/dvb2iq");
+    snprintf(Value, 15, " -s %d", BitrateK);
+    strcat(BitRateCommand, Value);
+    snprintf(Value, 63, " -f %d/%d -d -r 2 -m DVBS2", fec, fecden);
+    strcat(BitRateCommand, Value);
+    snprintf(Value, 63, " -c %s", Constellation);
+    strcat(BitRateCommand, Value);
+
+    //printf("Command is %s\n", BitRateCommand);
+
+    fp = popen(BitRateCommand, "r");
+    if (fp == NULL)
+    {
+      printf("Failed to run command\n" );
+      exit(1);
+    }
+
+    while (fgets(Value, 10, fp) != NULL)
+    {
+      //printf("Calculated DVB-S2 bitrate is: %s", Value);
+    }
+    pclose(fp);
+    return atoi(Value);  
+  }
+
+  if (strcmp(CurrentTXMode, "DVB-S") == 0)
+  {
+    // bitrate = SR * 2 * FEC * 188 / 204
+
+    if ((fec == 1) || (fec == 2) || (fec == 3) || (fec == 5) || (fec ==7))  // valid FEC
+    {
+      Bitrate = Bitrate *  2 * fec *    188 ;       // top line
+      Bitrate = Bitrate /  ((fec + 1) * 204);       // bottom line    
+    }
+    else
+    {
+      return -1;
+    }
+  }
+
+  if (strcmp(CurrentTXMode, "DVB-T") == 0)
+  {
+    // bitrate = 423/544 * bandwidth * FEC * (bits per symbol) * (Guard Factor)
+
+    if (strcmp(DVBTQAM, "qpsk") == 0)
+    {
+      BitsPerSymbol = 2;
+    }
+    if (strcmp(DVBTQAM, "16qam") == 0)
+    {
+      BitsPerSymbol = 4;
+    }
+    if (strcmp(DVBTQAM, "64qam") == 0)
+    {
+      BitsPerSymbol = 6;
+    }
+
+    if (strcmp(Guard, "4") == 0)
+    {
+      guard = 4;
+    }
+    if (strcmp(Guard, "8") == 0)
+    {
+      guard = 8;
+    }
+    if (strcmp(Guard, "16") == 0)
+    {
+      guard = 16;
+    }
+    if (strcmp(Guard, "32") == 0)
+    {
+      guard = 32;
+    }
+
+    if ((fec == 1) || (fec == 2) || (fec == 3) || (fec == 5) || (fec ==7))  // valid FEC
+    {
+      Bitrate = Bitrate *  423 * fec * BitsPerSymbol * guard;       // top line
+      Bitrate = Bitrate / (544 * (fec + 1)       *   (guard + 1));  // bottom line    
+    }
+    else
+    {
+      return -1;
+    }
+  }
+  return (int)Bitrate;
+}
+
 
 /***************************************************************************//**
  * @brief Looks up the Audio Input Devices
@@ -3945,7 +4075,8 @@ void CheckExpress()
       wait_touch();
       BackgroundRGB(0,0,0,255);
     }
-    if (CheckExpressConnect() != 1)   // Connected
+//    if ((CheckExpressConnect() != 1) && (strcmp(CurrentTXMode, TabTXMode[6]) != 0))   // Connected and not DVB-T
+    if (CheckExpressConnect() != 1)
     {
       StartExpressServer();
     }
@@ -5896,7 +6027,8 @@ void EnforceValidTXMode()
        && (strcmp(CurrentModeOP, "JLIME") != 0)
        && (strcmp(CurrentModeOP, "JEXPRESS") != 0)) // not DVB-S2-capable
   {
-    if ((strcmp(CurrentTXMode, TabTXMode[0]) != 0) && (strcmp(CurrentTXMode, TabTXMode[1]) != 0))  // Not DVB-S and not Carrier
+    if ((strcmp(CurrentTXMode, TabTXMode[0]) != 0) && (strcmp(CurrentTXMode, TabTXMode[1]) != 0)
+     && (strcmp(CurrentTXMode, TabTXMode[6]) != 0))  // Not DVB-S DVB-T and Carrier
     {
       strcpy(CurrentTXMode, TabTXMode[0]);
       SetConfigParam(PATH_PCONFIG, Param, CurrentTXMode);
@@ -5910,9 +6042,10 @@ void EnforceValidFEC()
   char Param[7]="fec";
   char Value[7];
 
-  if ((strcmp(CurrentTXMode, TabTXMode[0]) == 0) || (strcmp(CurrentTXMode, TabTXMode[1]) == 0)) // Carrier or DVB-S
+  if ((strcmp(CurrentTXMode, TabTXMode[0]) == 0) || (strcmp(CurrentTXMode, TabTXMode[1]) == 0)
+   || (strcmp(CurrentTXMode, TabTXMode[6]) == 0)) // Carrier, DVB-S or DVB-T
   {
-    if (fec > 10)  // DVB-S2 FEC selected for DVB-S transmit mode
+    if (fec > 10)  // DVB-S2 FEC selected for DVB-S or DVB-T transmit mode
     {
       if((fec == 14) || (fec == 13) || (fec == 12)) // 1/4, 1/3, or 1/2
       {
@@ -6189,6 +6322,20 @@ void GreyOut11()
     // Until short/long frames working, grey out frames
     SetButtonStatus(ButtonNumber(CurrentMenu, 9), 2); // grey-out Frames long/short
   }
+
+  // DVB-T (add DATV Express here later?)
+  if ((strcmp(CurrentModeOP, "LIMEUSB") == 0)
+   || (strcmp(CurrentModeOP, "LIMEMINI") == 0)
+   || (strcmp(CurrentModeOP, "LIMEDVB") == 0)
+   || (strcmp(CurrentModeOP, "EXPRESS") == 0)
+   || (strcmp(CurrentModeOP, "IP") == 0))
+  {
+    SetButtonStatus(ButtonNumber(CurrentMenu, 7), 0); // show DVB-T
+  }
+  else
+  {
+    SetButtonStatus(ButtonNumber(CurrentMenu, 7), 2); // grey-out DVB-T
+  }
 }
 
 void GreyOut12()
@@ -6392,15 +6539,22 @@ void SelectInGroupOnMenu(int Menu, int StartButton, int StopButton, int NumberBu
 
 void SelectTX(int NoButton)  // TX RF Output Mode
 {
-  SelectInGroupOnMenu(CurrentMenu, 5, 6, NoButton, 1);
+  SelectInGroupOnMenu(CurrentMenu, 5, 7, NoButton, 1);
   SelectInGroupOnMenu(CurrentMenu, 0, 3, NoButton, 1);
-  if (NoButton > 3)  // Correct numbering
+  if (NoButton == 7) // DVB-T
   {
-    NoButton = NoButton - 5;
+    NoButton = 6;
   }
   else
   {
-    NoButton = NoButton + 2;
+    if (NoButton > 3)  // Correct numbering
+    {
+      NoButton = NoButton - 5;
+    }
+    else
+    {
+      NoButton = NoButton + 2;
+    }
   }
   strcpy(CurrentTXMode, TabTXMode[NoButton]);
   char Param[15]="modulation";
@@ -6452,7 +6606,7 @@ void SelectOP(int NoButton)      // Output device
 {
   int index;
   // Stop or reset DATV Express Server if required
-  if (strcmp(CurrentModeOP, TabModeOP[2]) == 0)  // mode was DATV Express
+  if ((strcmp(CurrentModeOP, TabModeOP[2]) == 0) && (strcmp(CurrentTXMode, "DVB-T") != 0)) // mode was DATV Express, and not DVB-T
   {
     system("sudo killall express_server >/dev/null 2>/dev/null");
     system("sudo rm /tmp/expctrl >/dev/null 2>/dev/null");
@@ -6481,7 +6635,7 @@ void SelectOP(int NoButton)      // Output device
   strcpy(CurrentModeOPtext, TabModeOPtext[index]);
 
   // Start DATV Express if required
-  if (strcmp(CurrentModeOP, TabModeOP[2]) == 0)  // new mode is DATV Express
+  if ((strcmp(CurrentModeOP, TabModeOP[2]) == 0) && (strcmp(CurrentTXMode, "DVB-T") != 0)) // new mode is DATV Express, not DVB-T
   {
     StartExpressServer();
   }
@@ -7878,7 +8032,7 @@ void TransmitStop()
   strcpy(Param,"modeoutput");
   GetConfigParam(PATH_PCONFIG,Param,Value);
   strcpy(ModeOutput,Value);
-  if(strcmp(ModeOutput,"DATVEXPRESS")==0)
+  if((strcmp(ModeOutput, "DATVEXPRESS") == 0) && (strcmp(CurrentTXMode, "DVB-T") != 0))
   {
     strcpy( expressrx, "echo \"set ptt rx\" >> /tmp/expctrl" );
     system(expressrx);
@@ -7905,6 +8059,7 @@ void TransmitStop()
   system("sudo killall avc2ts >/dev/null 2>/dev/null");
   system("sudo killall sox >/dev/null 2>/dev/null");
   system("sudo killall arecord >/dev/null 2>/dev/null");
+  system("sudo killall dvb_t_stack >/dev/null 2>/dev/null");
 
   if((strcmp(ModeOutput, "IQ") == 0) || (strcmp(ModeOutput, "QPSKRF") == 0))
   {
@@ -11114,39 +11269,6 @@ void YesNo(int i)  // i == 6 Yes, i == 8 No
   // First switch on what was calling the Yes/No question
   switch(CallingMenu)
   {
-  case 349:         // Force Lime Software upgrade?
-    MsgBox4("Please wait", " ", " ", " ");
-    if ((CheckLimeMiniConnect() == 0) || (CheckLimeUSBConnect() == 0))
-    {
-      switch (i)
-      {
-      case 6:     // Yes
-        MsgBox4("Upgrading Lime Firmware", " ", " ", " ");
-        system("LimeUtil --force --update");
-        usleep(250000);
-        if (LimeGWRev() == 29)
-        {
-          MsgBox4("Firmware Upgrade Successful", "Now at Gateware 1.29", "Touch Screen to Continue" ," ");
-        }
-        else
-        {
-          MsgBox4("Firmware Upgrade Unsuccessful", "Further Investigation required", "Touch Screen to Continue" ," ");
-        }
-        break;
-      case 8:     // No
-        MsgBox("LimeSDR firmware update cancelled");
-        break;
-      }
-    }
-    else
-    {
-      MsgBox4("No Lime Connected", " ", "Touch Screen to Continue" ," ");
-    }
-    wait_touch();
-    BackgroundRGB(0, 0, 0, 255);
-    CurrentMenu = 34;
-    UpdateWindow();
-    break;
 
   case 430:         // Restore Factory Settings?
     switch (i)
@@ -11450,6 +11572,9 @@ void InfoScreen()
   char Device2[256]=" ";
   GetDevices(Device1, Device2);
 
+  char BitRate[255];
+  sprintf(BitRate, "TS Bitrate Required = %d", CalcTSBitrate());
+
   int pointsize = 20;
 
   if (strcmp(DisplayType, "Element14_7") == 0)  // Reduce text size for 7 inch screen
@@ -11470,7 +11595,7 @@ void InfoScreen()
 
   // Display Text
   tw = TextWidth("BATC Portsdown Information Screen", font, pointsize);
-  Text(wscreen / 2.0 - (tw / 2.0), hscreen - linenumber * linepitch, "BATC Portsdown Information Screen", font, pointsize);
+  Text(wscreen / 2.0 - (tw / 2.0), hscreen - linenumber * linepitch, "BATC Portsdown 2020 Information Screen", font, pointsize);
   linenumber = linenumber + 2.0;
 
   Text(wscreen/12.0, hscreen - linenumber * linepitch, swversion, font, pointsize);
@@ -11506,7 +11631,10 @@ void InfoScreen()
   Text(wscreen/12.0, hscreen - linenumber * linepitch, Device2, font, pointsize);
   linenumber = linenumber + 1.0;
 
-    tw = TextWidth("Touch Screen to Continue",  font, pointsize);
+  Text(wscreen/12.0, hscreen - linenumber * linepitch, BitRate, font, pointsize);
+  linenumber = linenumber + 1.0;
+
+  tw = TextWidth("Touch Screen to Continue",  font, pointsize);
   Text(wscreen / 2.0 - (tw / 2.0), 20, "Touch Screen to Continue",  font, pointsize);
 
   // Push to screen
@@ -13696,7 +13824,8 @@ void waituntil(int w,int h)
           break;
         case 12:
           BackgroundRGB(0,0,0,255);
-          if ((strcmp(CurrentTXMode, TabTXMode[0]) == 0) || (strcmp(CurrentTXMode, TabTXMode[1]) == 0)) // DVB-S
+          if ((strcmp(CurrentTXMode, TabTXMode[0]) == 0) || (strcmp(CurrentTXMode, TabTXMode[1]) == 0)
+           || (strcmp(CurrentTXMode, TabTXMode[6]) == 0)) // Carrier, DVB-S or DVB-T
           {
             printf("MENU 18 \n");       // FEC
             CurrentMenu=18;
@@ -14782,6 +14911,16 @@ void waituntil(int w,int h)
           SelectTX(i);
           printf("Carrier\n");
           break;
+        case 7:                               // DVB-T
+          SelectTX(i);
+          printf("DVB-T\n");
+          //CurrentMenu = 16;                  // Set the guard interval and QAM
+          //printf("MENU 16 \n");              // on DVB-T selection
+          //setBackColour(0, 0, 0);
+          //clearScreen();
+          //Start_Highlights_Menu16();
+          //UpdateWindow();
+          break;
         case 0:                               // QPSK
           SelectTX(i);
           printf("S2 QPSK\n");
@@ -14810,15 +14949,18 @@ void waituntil(int w,int h)
         default:
           printf("Menu 11 Error\n");
         }
-        Start_Highlights_Menu11();
-        UpdateWindow();
-        usleep(500000);
-        SelectInGroupOnMenu(CurrentMenu, 4, 4, 4, 0); // Reset cancel (even if not selected)
-        printf("Returning to MENU 1 from Menu 11\n");
-        CurrentMenu=1;
-        BackgroundRGB(255,255,255,255);
-        Start_Highlights_Menu1();
-        UpdateWindow();
+        //if (i != 7)   // Skip if DVB-T guard/QAM needs to be set
+        //{
+          Start_Highlights_Menu11();
+          UpdateWindow();
+          usleep(500000);
+          SelectInGroupOnMenu(CurrentMenu, 4, 4, 4, 0); // Reset cancel (even if not selected)
+          printf("Returning to MENU 1 from Menu 11\n");
+          CurrentMenu=1;
+          BackgroundRGB(255,255,255,255);
+          Start_Highlights_Menu1();
+          UpdateWindow();
+        //}
         continue;   // Completed Menu 11 action, go and wait for touch
       }
 
@@ -15036,54 +15178,40 @@ void waituntil(int w,int h)
         continue;   // Completed Menu 15 action, go and wait for touch
       }
 
-      if (CurrentMenu == 16)  // Menu 16 Frequency
+      if (CurrentMenu == 16)  // Menu 16 Guard Interval (was frequency)
       {
         printf("Button Event %d, Entering Menu 16 Case Statement\n",i);
         switch (i)
         {
-        case 4:                               // Cancel
+        case 4:                               // Cancel DVBTQAM
           SelectInGroupOnMenu(CurrentMenu, 4, 4, 4, 1);
           printf("SR Cancel\n");
           break;
-        case 0:                               // Freq 6
-        case 1:                               // Freq 7
-        case 2:                               // Freq 8
-        case 5:                               // Freq 1
-        case 6:                               // Freq 2
-        case 7:                               // Freq 3
-        case 8:                               // Freq 4
-        case 9:                               // Freq 5
-          SelectFreq(i);
-          printf("Frequency Button %d\n", i);
+        case 0:                               //   Guard 1/4
+        case 1:                               //   Guard 1/8
+        case 2:                               //   Guard 1/16
+        case 3:                               //   Guard 1/32
+          SelectInGroupOnMenu(CurrentMenu, 0, 3, i, 1);
+          //SelectGuard(i);
+          printf("Guard Interval Button %d\n", i);
           break;
-        case 3:                               // Freq 9 Direct Entry
-          ChangePresetFreq(i);
-          SelectFreq(i);
-          printf("Frequency Button %d\n", i);
+        case 5:                               //   qpsk
+        case 6:                               //   16-QAM
+        case 7:                               //   64-QAM
+          SelectInGroupOnMenu(CurrentMenu, 5, 7, i, 1);
+          //SelectQAM(i);
+          printf("DVB-T QAM Button %d\n", i);
           break;
         default:
           printf("Menu 16 Error\n");
         }
-        if(i != 3)  // Don't pause if frequency has been set on keyboard
-        {
-          UpdateWindow();
-          usleep(500000);
-        }
+        UpdateWindow();
+        usleep(1000000);
         SelectInGroupOnMenu(CurrentMenu, 4, 4, 4, 0); // Reset cancel (even if not selected)
-        if (CallingMenu == 1)
-        {
-          printf("Returning to MENU 1 from Menu 16\n");
-          CurrentMenu=1;
-          BackgroundRGB(255,255,255,255);
-          Start_Highlights_Menu1();
-        }
-        else
-        {
-          printf("Returning to MENU 5 from Menu 16\n");
-          CurrentMenu=5;
-          BackgroundRGB(0, 0, 0, 255);
-          Start_Highlights_Menu5();
-        }
+        printf("Returning to MENU 1 from Menu 16\n");
+        CurrentMenu=1;
+        BackgroundRGB(255, 255, 255, 255);
+        Start_Highlights_Menu1();
         UpdateWindow();
         continue;   // Completed Menu 16 action, go and wait for touch
       }
@@ -15884,7 +16012,7 @@ void waituntil(int w,int h)
         continue;   // Completed Menu 33 action, go and wait for touch
       }
 
-      if (CurrentMenu == 34)  // Menu 34 Lime Configuration
+      if (CurrentMenu == 34)  // Menu 34 Was Stretch Lime Configuration
       {
         printf("Button Event %d, Entering Menu 34 Case Statement\n",i);
         switch (i)
@@ -15899,50 +16027,6 @@ void waituntil(int w,int h)
           CurrentMenu=1;
           BackgroundRGB(255,255,255,255);
           Start_Highlights_Menu1();
-          UpdateWindow();
-          break;
-        case 0:                               // Delete Lime FW File on Portsdown
-          system("rm -rf /home/pi/.local/share/LimeSuite/images/");
-          MsgBox4("Lime firmware file on Portsdown", "deleted.", " ", "Touch screeen to continue");
-          wait_touch();
-          BackgroundRGB(0,0,0,255);
-          UpdateWindow();
-          break;
-        case 5:                               // Display LimeSuite Info Page
-          LimeUtilInfo();
-          wait_touch();
-          BackgroundRGB(0,0,0,255);
-          UpdateWindow();
-          break;
-        case 6:                               // Display Lime FW Info Page
-          LimeInfo();
-          wait_touch();
-          BackgroundRGB(0,0,0,255);
-          UpdateWindow();
-          break;
-        case 7:                               // Display Lime Report Page
-          LimeMiniTest();
-          wait_touch();
-          BackgroundRGB(0 ,0, 0, 255);
-          UpdateWindow();
-          break;
-        case 8:                               // Lime firmware update
-          printf("Lime Firmware Update\n");
-          LimeFWUpdate(0);
-          CurrentMenu=34;
-          BackgroundRGB(0,0,0,255);
-          UpdateWindow();
-          break;
-        case 9:                               // Force Lime firmware update
-          printf("Force Lime Firmware Update\n");
-          if (CheckGoogle() != 0)
-          {
-            MsgBox4("Warning - No internet Connection!", " ", "Cancel at the next step unless", "you have previously upgraded.");
-            wait_touch();
-          }
-          CallingMenu = 349;
-          CurrentMenu = 38;
-          MsgBox4("Force update should only be used to", "downgrade LimeSDR Mini for Portdsown", "Continue?", " ");
           UpdateWindow();
           break;
         default:
@@ -16043,7 +16127,7 @@ void waituntil(int w,int h)
         printf("Button Event %d, Entering Menu 37 Case Statement\n",i);
         switch (i)
         {
-        case 0:                               // Lime FW Update 1.29
+        //case 0:                               // Was Lime FW Update 1.29
         case 1:                               // Lime FW Update 1.30
         case 2:                               // Lime FW Update DVB
         case 3:                               // Lime FW Update for LimeNet Micro
@@ -16080,6 +16164,7 @@ void waituntil(int w,int h)
         case 7:                               // Display Lime Report Page
           LimeMiniTest();
           wait_touch();
+          system("/home/pi/rpidatv/bin/limesdr_stopchannel"); // reset Lime
           BackgroundRGB(0 ,0, 0, 255);
           UpdateWindow();
           break;
@@ -16866,7 +16951,14 @@ void Start_Highlights_Menu1()
   strcpy(Param,"symbolrate");
   GetConfigParam(PATH_PCONFIG,Param,Value);
   printf("Value=%s %s\n",Value,"SR");
-  strcpy(SRtext, "Sym Rate^ ");
+  if (strcmp(CurrentTXMode, "DVB-T") != 0)  // not DVB-T
+  {
+    strcpy(SRtext, "Sym Rate^ ");
+  }
+  else
+  {
+    strcpy(SRtext, "Bandwidth^ ");
+  }
   strcat(SRtext, Value);
   strcat(SRtext, " ");
   AmendButtonStatus(11, 0, SRtext, &Blue);
@@ -18326,6 +18418,11 @@ void Define_Menu11()
   AddButtonStatus(button, "Carrier", &Blue);
   AddButtonStatus(button, "Carrier", &Green);
 
+  button = CreateButton(11, 7);
+  AddButtonStatus(button, "DVB-T", &Blue);
+  AddButtonStatus(button, "DVB-T", &Green);
+  AddButtonStatus(button, "DVB-T", &Grey);
+
   button = CreateButton(11, 8);
   AddButtonStatus(button, "Pilots^Off", &LBlue);
   AddButtonStatus(button, "Pilots^Off", &Green);
@@ -18634,73 +18731,44 @@ void Define_Menu16()
 {
   int button;
 
-  float TvtrFreq;
-  char Freqtext[31];
-  char Value[31];
-
-  strcpy(MenuTitle[16], "Frequency Selection Menu (16)"); 
+  strcpy(MenuTitle[16], "DVB-T Parameters Menu (16)"); 
 
   // Bottom Row, Menu 16
 
-  if ((TabBandLO[5] < 0.1) && (TabBandLO[5] > -0.1))
-  {
-    strcpy(Freqtext, FreqLabel[5]);
-  }
-  else
-  {
-    strcpy(Freqtext, "F: ");
-    strcat(Freqtext, TabFreq[5]);
-    strcat(Freqtext, "^T:");
-    TvtrFreq = atof(TabFreq[5]) + TabBandLO[CurrentBand];
-    if (TvtrFreq < 0)
-    {
-      TvtrFreq = TvtrFreq * -1;
-    }
-    snprintf(Value, 10, "%.2f", TvtrFreq);
-    strcat(Freqtext, Value);
-  }
- 
   button = CreateButton(16, 0);
-  AddButtonStatus(button, "test", &Blue);
-  AddButtonStatus(button, Freqtext, &Green);
+  AddButtonStatus(button, "Guard^1/4", &Blue);
+  AddButtonStatus(button, "Guard^1/4", &Green);
 
   button = CreateButton(16, 1);
-  AddButtonStatus(button, FreqLabel[6], &Blue);
-  AddButtonStatus(button, FreqLabel[6], &Green);
+  AddButtonStatus(button, "Guard^1/8", &Blue);
+  AddButtonStatus(button, "Guard^1/8", &Green);
 
   button = CreateButton(16, 2);
-  AddButtonStatus(button, FreqLabel[7], &Blue);
-  AddButtonStatus(button, FreqLabel[7], &Green);
+  AddButtonStatus(button, "Guard^1/16", &Blue);
+  AddButtonStatus(button, "Guard^1/16", &Green);
 
   button = CreateButton(16, 3);
-  AddButtonStatus(button, FreqLabel[8], &Blue);
-  AddButtonStatus(button, FreqLabel[8], &Green);
+  AddButtonStatus(button, "Guard^1/32", &Blue);
+  AddButtonStatus(button, "Guard^1/32", &Green);
 
   button = CreateButton(16, 4);
-  AddButtonStatus(button, "Cancel", &DBlue);
-  AddButtonStatus(button, "Cancel", &LBlue);
+  AddButtonStatus(button, "Continue", &DBlue);
+  AddButtonStatus(button, "Continue", &LBlue);
 
   // 2nd Row, Menu 16
 
   button = CreateButton(16, 5);
-  AddButtonStatus(button, FreqLabel[0], &Blue);
-  AddButtonStatus(button, FreqLabel[0], &Green);
+  AddButtonStatus(button, "QPSK", &Blue);
+  AddButtonStatus(button, "QPSK", &Green);
 
   button = CreateButton(16, 6);
-  AddButtonStatus(button, FreqLabel[1], &Blue);
-  AddButtonStatus(button, FreqLabel[1], &Green);
+  AddButtonStatus(button, "16-QAM", &Blue);
+  AddButtonStatus(button, "16-QAM", &Green);
 
   button = CreateButton(16, 7);
-  AddButtonStatus(button, FreqLabel[2], &Blue);
-  AddButtonStatus(button, FreqLabel[2], &Green);
+  AddButtonStatus(button, "64-QAM", &Blue);
+  AddButtonStatus(button, "64-QAM", &Green);
 
-  button = CreateButton(16, 8);
-  AddButtonStatus(button, FreqLabel[3], &Blue);
-  AddButtonStatus(button, FreqLabel[3], &Green);
-
-  button = CreateButton(16, 9);
-  AddButtonStatus(button, FreqLabel[4], &Blue);
-  AddButtonStatus(button, FreqLabel[4], &Green);
 }
 
 void MakeFreqText(int index)
@@ -18754,50 +18822,39 @@ void MakeFreqText(int index)
 
 void Start_Highlights_Menu16()
 {
-  // Frequency
-  char Param[255];
-  char Value[255];
-  int index;
   int NoButton;
 
-  if (CallingMenu == 1)
+  if (strcmp(Guard, "4") == 0)
   {
-    strcpy(MenuTitle[16], "Transmit Frequency Selection Menu (16)"); 
+    NoButton = 0;
   }
-  else if (CallingMenu == 5)
+  else if (strcmp(Guard, "8") == 0)
   {
-    strcpy(MenuTitle[16], " Receive Frequency Selection Menu (16)"); 
+    NoButton = 1;
   }
-
-
-  // Update info in memory
-  ReadPresets();
-
-  // Look up current transmit frequency for highlighting
-  strcpy(Param,"freqoutput");
-  GetConfigParam(PATH_PCONFIG, Param, Value);
-
-  for(index = 0; index < 9 ; index = index + 1)
+  else if (strcmp(Guard, "16") == 0)
   {
-    // Define the button text
-    MakeFreqText(index);
-    NoButton = index + 5; // Valid for bottom row
-    if (index > 4)          // Overwrite for top row
-    {
-      NoButton = index - 5;
-    }
-
-    AmendButtonStatus(ButtonNumber(16, NoButton), 0, FreqBtext, &Blue);
-    AmendButtonStatus(ButtonNumber(16, NoButton), 1, FreqBtext, &Green);
-
-    //Highlight the Current Button
-    if(((strcmp(Value, TabFreq[index]) == 0) && (CallingMenu == 1)) 
-      || ((strcmp(RXfreq[0], TabFreq[index]) == 0) && (CallingMenu == 5)))
-    {
-      SelectInGroupOnMenu(16, 5, 9, NoButton, 1);
-      SelectInGroupOnMenu(16, 0, 3, NoButton, 1);
-    }
+    NoButton = 2;
   }
+  else if (strcmp(Guard, "32") == 0)
+  {
+    NoButton = 3;
+  }
+  SelectInGroupOnMenu(16, 0, 3, NoButton, 1);
+
+  if (strcmp(DVBTQAM, "qpsk") == 0)
+  {
+    NoButton = 5;
+  }
+  else if (strcmp(DVBTQAM, "16qam") == 0)
+  {
+    NoButton = 6;
+  }
+  else if (strcmp(DVBTQAM, "64qam") == 0)
+  {
+    NoButton = 7;
+  }
+  SelectInGroupOnMenu(16, 5, 7, NoButton, 1);
 }
 
 void Define_Menu17()
@@ -18851,14 +18908,21 @@ void Define_Menu17()
 
 void Start_Highlights_Menu17()
 {
-  // Symbol Rate
+  // Symbol Rate or Bandwidth (DVB-T)
   char Param[255];
   char Value[255];
   int SR;
 
   if (CallingMenu == 1)
   {
-    strcpy(MenuTitle[17], "Transmit Symbol Rate Selection Menu (17)"); 
+    if (strcmp(CurrentTXMode, "DVB-T") != 0)  //not DVB-T
+    {
+      strcpy(MenuTitle[17], "Transmit Symbol Rate Selection Menu (17)");
+    }
+    else
+    {
+      strcpy(MenuTitle[17], "DVB-T Transmit Bandwidth Selection Menu (17)");
+    }
     strcpy(Param,"symbolrate");
     GetConfigParam(PATH_PCONFIG,Param,Value);
     SR=atoi(Value);
@@ -20285,10 +20349,6 @@ void Define_Menu37()
 
   // Bottom Row, Menu 37
 
-  button = CreateButton(37, 0);
-  AddButtonStatus(button, "Update to^FW 1.29", &Blue);
-  AddButtonStatus(button, "Update to^FW 1.29", &Green);
-
   button = CreateButton(37, 1);
   AddButtonStatus(button, "Update to^FW 1.30", &Blue);
   AddButtonStatus(button, "Update to^FW 1.30", &Green);
@@ -20334,7 +20394,6 @@ void Start_Highlights_Menu37()
   LimeNETMicroDet = DetectLimeNETMicro();
   if (LimeNETMicroDet == 1)
   {
-    AmendButtonStatus(ButtonNumber(37, 0), 0, "Update to^FW 1.29", &Grey);
     AmendButtonStatus(ButtonNumber(37, 1), 0, "Update to^FW 1.30", &Grey);
     AmendButtonStatus(ButtonNumber(37, 2), 0, "Update to^DVB FW", &Grey);
   }
@@ -21316,8 +21375,11 @@ int main(int argc, char **argv)
   // Start the button Menu
   Start(wscreen,hscreen);
 
-  // Check if DATV Express Server required and, if so, start it
-  CheckExpress();
+  // Check if DATV Express Server required for DVB-S and, if so, start it
+  if (strcmp(CurrentTXMode, "DVB-S") == 0)
+  {
+    CheckExpress();
+  }
 
   // Check Lime connected if selected
   CheckLimeReady();
