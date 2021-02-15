@@ -1,10 +1,10 @@
-202102060
+202102160
 New builds based on Raspios 2021-01-11
 Update Limesuite Version to 20.10
 Tidy LimeFPGA builds
 Display Required TS Bitrate on Info Screen
 Improve Jetson HDMI video quality
-Intial LimeSDR DVB-T capability
+Initial LimeSDR Mini DVB-T capability
 
 202011280
 Reduce contrast on all EasyCap modes to prevent crushed whites
