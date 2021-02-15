@@ -39,7 +39,7 @@ UDPOUTADDR=$(get_config_var udpoutaddr $PCONFIGFILE)
 UDPOUTPORT=10000 ###$(get_config_var udpoutport $PCONFIGFILE)
 UDPINPORT=10000 ####$(get_config_var udpinport $PCONFIGFILE)
 CALL=$(get_config_var call $PCONFIGFILE)
-CHANNEL="Portsdown 2020"
+CHANNEL="Portsdown_2020"
 FREQ_OUTPUT=$(get_config_var freqoutput $PCONFIGFILE)
 STREAM_URL=$(get_config_var streamurl $PCONFIGFILE)
 STREAM_KEY=$(get_config_var streamkey $PCONFIGFILE)
@@ -1874,6 +1874,7 @@ case "$MODE_OUTPUT" in
   FORMAT=$(get_config_var format $PCONFIGFILE)
   ENCODING=$(get_config_var encoding $PCONFIGFILE)
   CMDFILE="/home/pi/tmp/jetson_command.txt"
+  CHANNEL="Portsdown_Jetson"
 
   # Set the video format
   if [ "$FORMAT" == "1080p" ]; then
