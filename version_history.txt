@@ -1,3 +1,6 @@
+202102210
+Initial LimeRFE control capability through USB
+
 202102160
 New builds based on Raspios 2021-01-11
 Update Limesuite Version to 20.10
