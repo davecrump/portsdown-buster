@@ -1271,7 +1271,7 @@ fi
     VIDEO_FPS=10  #
     IDRPERIOD=10  #  Setting these parameters prevents the partial picture problem
 
-     sudo $PATHRPI"/avc2ts" -b $BITRATE_VIDEO -m $BITRATE_TS -d 300 -x $VIDEO_WIDTH -y $VIDEO_HEIGHT \
+    sudo $PATHRPI"/avc2ts" -b $BITRATE_VIDEO -m $BITRATE_TS -d 300 -x $VIDEO_WIDTH -y $VIDEO_HEIGHT \
       -f $VIDEO_FPS -i $IDRPERIOD $OUTPUT_FILE -t 3 -p $PIDPMT -s $CALL $OUTPUT_IP \
        > /dev/null &
   ;;

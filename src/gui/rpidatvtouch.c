@@ -13467,7 +13467,8 @@ void LimeRFEInit()
   }
 
   int RFE_CID = 1;
-  int RFE_PORT = 2; // Default TX output is TX Port
+  int RFE_PORT = 1; // Default TX output is TX/RX Port
+//  int RFE_PORT = 2; // Alternative TX output is TX Port
   char Value[127] = "146.5";
   unsigned char RFEInfo[7];
 
