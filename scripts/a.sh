@@ -353,12 +353,8 @@ OUTPUT_QPSK="videots"
 UPSAMPLE=1  # Set here to allow bitrate calculation
 let SYMBOLRATE_K=SYMBOLRATE/1000
 
-echo "Calling"
-  
 BITRATE_TS="$($PATHRPI"/dvb2iq" -s $SYMBOLRATE_K -f $FECNUM"/"$FECDEN \
               -d -r $UPSAMPLE -m $MODTYPE -c $CONSTLN $PILOTS $FRAMES )"
-
-echo $BITRATE_TS
 
 # Calculate the Video Bit Rate for MPEG-2 Sound/no sound
 if [ "$MODE_INPUT" == "CAMMPEG-2" ] || [ "$MODE_INPUT" == "ANALOGMPEG-2" ] \
@@ -1275,12 +1271,9 @@ fi
     VIDEO_FPS=10  #
     IDRPERIOD=10  #  Setting these parameters prevents the partial picture problem
 
-echo $SESSION_TYPE
-echo "undefined"
-
     sudo $PATHRPI"/avc2ts" -b $BITRATE_VIDEO -m $BITRATE_TS -d 300 -x $VIDEO_WIDTH -y $VIDEO_HEIGHT \
-      -f $VIDEO_FPS -i $IDRPERIOD $OUTPUT_FILE -t 3 -p $PIDPMT -s $CALL $OUTPUT_IP & #\
-      # > /dev/null &
+      -f $VIDEO_FPS -i $IDRPERIOD $OUTPUT_FILE -t 3 -p $PIDPMT -s $CALL $OUTPUT_IP \
+       > /dev/null &
   ;;
 
 # *********************************** TRANSPORT STREAM INPUT THROUGH IP ******************************************
