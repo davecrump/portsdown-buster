@@ -19,6 +19,7 @@
 # 132  Run Update Script for production load
 # 133  Run Update Script for development load
 # 134  Run XY Display
+# 136  Exit from rpidatvgui requesting start of BandViewer
 # 160  Shutdown from GUI
 # 192  Reboot from GUI
 # 193  Rotate 7 inch and reboot
@@ -59,6 +60,11 @@ while [ "$GUI_RETURN_CODE" -gt 127 ] || [ "$GUI_RETURN_CODE" -eq 0 ];  do
     ;;
     134)
       GUI_RETURN_CODE="129"
+    ;;
+    136)
+      sleep 1
+      /home/pi/rpidatv/bin/bandview
+      GUI_RETURN_CODE="$?"
     ;;
     160)
       sleep 1
@@ -112,8 +118,8 @@ while [ "$GUI_RETURN_CODE" -gt 127 ] || [ "$GUI_RETURN_CODE" -eq 0 ];  do
       break
     ;;
     *)
-      # Jump out of the loop
-      break
+      /home/pi/rpidatv/bin/rpidatvgui
+      GUI_RETURN_CODE="$?"
     ;;
   esac
 done
