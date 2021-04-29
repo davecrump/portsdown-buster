@@ -462,6 +462,16 @@ sudo rm /etc/wpa_supplicant/wpa_supplicant.conf
 sudo cp /home/pi/rpidatv/scripts/configs/wpa_supplicant.conf /etc/wpa_supplicant/wpa_supplicant.conf
 sudo chown root /etc/wpa_supplicant/wpa_supplicant.conf
 
+# Compile Band Viewer
+echo
+echo "---------------------------------"
+echo "----- Compiling Band Viewer -----"
+echo "---------------------------------"
+cd /home/pi/rpidatv/src/bandview
+make
+cp bandview ../../bin/
+cd /home/pi
+
 echo
 echo "-----------------------------------------"
 echo "----- Compiling Ancilliary programs -----"

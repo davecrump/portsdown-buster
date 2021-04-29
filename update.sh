@@ -404,6 +404,16 @@ make
 cp /home/pi/rpidatv/src/atten/set_attenuator /home/pi/rpidatv/bin/set_attenuator
 cd /home/pi
 
+# Compile Band Viewer
+echo
+echo "---------------------------------"
+echo "----- Compiling Band Viewer -----"
+echo "---------------------------------"
+cd /home/pi/rpidatv/src/bandview
+make
+cp bandview ../../bin/
+cd /home/pi
+
 # Check if raspi2png needs to be installed (202004300)
 if [ ! -f "/usr/bin/raspi2png" ]; then
   echo "Installing raspi2png"

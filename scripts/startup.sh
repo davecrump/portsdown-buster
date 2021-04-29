@@ -133,7 +133,8 @@ MODE_STARTUP=$(get_config_var startup $PCONFIGFILE)
 
 # But only if it is a boot session and display boot selected
 
-if [[ "$SESSION_TYPE" == "boot" && "$MODE_STARTUP" == "Display_boot" ]]; then
+if   [[ "$SESSION_TYPE" == "boot" && "$MODE_STARTUP" == "Display_boot" ]] \
+  || [[ "$SESSION_TYPE" == "boot" && "$MODE_STARTUP" == "Bandview_boot" ]]; then
 
   # Test if the device is a LimeNet Micro
   # (0 for LimeNet Micro detected, 1 for not detected)
@@ -373,6 +374,11 @@ case "$MODE_STARTUP" in
     return
   ;;
   Display_boot)
+    # Start the Touchscreen Scheduler
+    source /home/pi/rpidatv/scripts/scheduler.sh
+    return
+  ;;
+  Bandview_boot)
     # Start the Touchscreen Scheduler
     source /home/pi/rpidatv/scripts/scheduler.sh
     return
