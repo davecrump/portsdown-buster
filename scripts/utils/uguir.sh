@@ -5,6 +5,7 @@
 # set -x
 
 sudo killall rpidatvgui >/dev/null 2>/dev/null
+sudo killall bandview >/dev/null 2>/dev/null
 cd /home/pi/rpidatv/src/gui
 make clean
 make

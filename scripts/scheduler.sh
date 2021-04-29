@@ -9,6 +9,31 @@
 
 # set -x
 
+############ Set Environment Variables ###############
+
+PCONFIGFILE="/home/pi/rpidatv/scripts/portsdown_config.txt"
+
+############ Function to Read from Config File ###############
+
+get_config_var() {
+lua - "$1" "$2" <<EOF
+local key=assert(arg[1])
+local fn=assert(arg[2])
+local file=assert(io.open(fn))
+for line in file:lines() do
+local val = line:match("^#?%s*"..key.."=(.*)$")
+if (val ~= nil) then
+print(val)
+break
+end
+end
+EOF
+}
+
+##############################################################
+
+
+
 # Return Codes
 #
 # <128  Exit leaving system running
@@ -18,13 +43,31 @@
 # 131  Exit from rpidatvgui requesting start of spectrum monitor
 # 132  Run Update Script for production load
 # 133  Run Update Script for development load
-# 134  Run XY Display
+# 134  Run XY Display NOT USED
 # 136  Exit from rpidatvgui requesting start of BandViewer
 # 160  Shutdown from GUI
 # 192  Reboot from GUI
 # 193  Rotate 7 inch and reboot
 
-GUI_RETURN_CODE=129             # Start rpidatvgui on first call
+BANDVIEW_START_DELAY=10  # Stops bandview display being over-written by SSH Prompt
+
+MODE_STARTUP=$(get_config_var startup $PCONFIGFILE)
+
+case "$MODE_STARTUP" in
+  Display_boot)
+    # Start the Portsdown Touchscreen
+    GUI_RETURN_CODE=129
+  ;;
+  Bandview_boot)
+    # Start the Band Viewer
+    GUI_RETURN_CODE=136
+  ;;
+  *)
+    # Default to Portsdown
+    GUI_RETURN_CODE=129
+  ;;
+esac
+
 
 while [ "$GUI_RETURN_CODE" -gt 127 ] || [ "$GUI_RETURN_CODE" -eq 0 ];  do
   case "$GUI_RETURN_CODE" in
@@ -62,9 +105,11 @@ while [ "$GUI_RETURN_CODE" -gt 127 ] || [ "$GUI_RETURN_CODE" -eq 0 ];  do
       GUI_RETURN_CODE="129"
     ;;
     136)
-      sleep 1
-      /home/pi/rpidatv/bin/bandview
+      sleep 1                        # Wait for Lime to be released
+      sleep $BANDVIEW_START_DELAY
+      /home/pi/rpidatv/bin/bandview >/dev/null 2>/dev/null
       GUI_RETURN_CODE="$?"
+      BANDVIEW_START_DELAY=0
     ;;
     160)
       sleep 1

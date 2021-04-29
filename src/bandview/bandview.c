@@ -10,7 +10,7 @@
 #include <linux/types.h>
 #include <linux/spi/spidev.h>
 
-#include <wiringPi.h>
+//#include <wiringPi.h>
 #include <signal.h>
 #include <dirent.h>
 #include <pthread.h>
@@ -18,14 +18,11 @@
 #include <stdbool.h>
 #include <fftw3.h>
 
-#include "font/font.h"
-#include "font/Font.h"
-#include "touch.h"
-#include "Graphics.h"
 #include "screen.h"
+#include "font/font.h"
+#include "touch.h"
 #include "graphics.h"
 #include "timing.h"
-
 #include "lime.h"
 #include "fft.h"
 #include "buffer/buffer_circular.h"
@@ -76,48 +73,51 @@ button_t ButtonArray[MAX_BUTTON];
 int CurrentMenu = 1;
 int CallingMenu = 1;
 char KeyboardReturn[64];
-bool NewSettings = false;
+
 bool NewFreq = false;
 bool NewGain = false;
 bool NewSpan = false;
+bool NewCal  = false;
 float gain;
 
-int Inversed = 0;
-int  scaledX, scaledY;
-char DisplayType[31] = "Element14_7";
+int scaledX, scaledY;
+
 int wbuttonsize = 100;
 int hbuttonsize = 50;
 int rawX, rawY;
 int FinishedButton = 0;
 int i;
-bool freeze = FALSE;
-bool frozen = FALSE;
-bool normalised = FALSE;
-bool normalising = FALSE;
-bool activescan = FALSE;
-bool finishednormalising = FALSE;
+bool freeze = false;
+bool frozen = false;
+bool activescan = false;
+bool PeakPlot = false;
 //int y[501];               // Actual displayed values on the chart
-int norm[501];            // Normalisation corrections
+
 int scaledadresult[501];  // Sensed AD Result
-int normleveloffset = 300;
+int PeakValue[513] = {0};
+bool RequestPeakValueZero = false;
 
 int startfreq = 0;
 int stopfreq = 0;
 int rbw = 0;
 int reflevel = 99;
-int normlevel = -20;
 char PlotTitle[63] = "-";
-bool ContScan = FALSE;
+bool ContScan = false;
 
 int centrefreq = 437000;
 int span = 5120;
 int limegain = 90;
+int pfreq1 = 146500;
+int pfreq2 = 437000;
+int pfreq3 = 748000;
+int pfreq4 = 1255000;
+int pfreq5 = 2409000;
 
 float MAIN_SPECTRUM_TIME_SMOOTH;
 
 int markerx = 250;
 int markery = 15;
-bool markeron = FALSE;
+bool markeron = false;
 int markermode = 7;       // 2 peak, 3, null, 4 man, 7 off
 int historycount = 0;
 int markerxhistory[10];
@@ -158,7 +158,6 @@ void DrawEmptyScreen();
 void DrawYaxisLabels();  
 void DrawSettings();
 void CalculateMarkers();
-void Normalise();
 void Define_Menu1();
 void Define_Menu2();
 void Define_Menu3();
@@ -166,9 +165,14 @@ void Define_Menu4();
 void Define_Menu5();
 void Define_Menu6();
 void Define_Menu7();
+void Define_Menu8();
+void Define_Menu9();
+void Define_Menu10();
 static void cleanexit(int);
 void Start_Highlights_Menu6();
+void Start_Highlights_Menu7();
 void Start_Highlights_Menu8();
+void Start_Highlights_Menu10();
 
 //////////////////////////////////////////// SA bits /////////////////////////////////////////
 
@@ -298,24 +302,21 @@ void ReadSavedParams()
   limegain = atoi(response);
   gain = ((float)limegain) / 100.0;
 
-  //GetConfigParam(PATH_CONFIG, "startfreq", response);
-  //startfreq = atoi(response);
+  strcpy(response, "146500");
+  GetConfigParam(PATH_CONFIG, "pfreq1", response);
+  pfreq1 = atoi(response);
 
-  //strcpy(response, "0");
-  //GetConfigParam(PATH_CONFIG, "stopfreq", response);
-  //stopfreq = atoi(response);
+  GetConfigParam(PATH_CONFIG, "pfreq2", response);
+  pfreq2 = atoi(response);
 
-  //strcpy(response, "99");  // this is the "do not display" level
-  //GetConfigParam(PATH_CONFIG, "reflevel", response);
-  //reflevel = atoi(response);
+  GetConfigParam(PATH_CONFIG, "pfreq3", response);
+  pfreq3 = atoi(response);
 
-  //strcpy(response, "-20");  // this is the default level
-  //GetConfigParam(PATH_CONFIG, "normlevel", response);
-  //normlevel = atoi(response);
+  GetConfigParam(PATH_CONFIG, "pfreq4", response);
+  pfreq4 = atoi(response);
 
-  //strcpy(response, "0");  // this is the "do not display" level
-  //GetConfigParam(PATH_CONFIG, "rbw", response);
-  //rbw = atoi(response);
+  GetConfigParam(PATH_CONFIG, "pfreq5", response);
+  pfreq5 = atoi(response);
 
   strcpy(PlotTitle, "-");  // this is the "do not display" response
   GetConfigParam(PATH_CONFIG, "title", PlotTitle);
@@ -842,35 +843,8 @@ void TransformTouchMap(int x, int y)
   // and transforms it to approx 0 - wscreen and 0 - hscreen in globals scaledX 
   // and scaledY prior to final correction by CorrectTouchMap  
 
-  int shiftX, shiftY;
-  double factorX, factorY;
-
-  // Adjust registration of touchscreen for Waveshare
-  shiftX=30; // move touch sensitive position left (-) or right (+).  Screen is 700 wide
-  shiftY=-5; // move touch sensitive positions up (-) or down (+).  Screen is 480 high
-
-  factorX=-0.4;  // expand (+) or contract (-) horizontal button space from RHS. Screen is 5.6875 wide
-  factorY=-0.3;  // expand or contract vertical button space.  Screen is 8.53125 high
-
-  // Switch axes for normal and waveshare displays
-  if(Inversed==0) // Tontec35 or Element14_7
-  {
-    scaledX = x/scaleXvalue;
-    scaledY = hscreen-y/scaleYvalue;
-  }
-  else //Waveshare (inversed)
-  {
-    scaledX = shiftX+wscreen-y/(scaleXvalue+factorX);
-
-    if(strcmp(DisplayType, "Waveshare4") != 0) //Check for Waveshare 4 inch
-    {
-      scaledY = shiftY+hscreen-x/(scaleYvalue+factorY);
-    }
-    else  // Waveshare 4 inch display so flip vertical axis
-    {
-      scaledY = shiftY+x/(scaleYvalue+factorY); // Vertical flip for 4 inch screen
-    }
-  }
+  scaledX = x / scaleXvalue;
+  scaledY = hscreen - y / scaleYvalue;
 }
 
 
@@ -958,17 +932,17 @@ int ButtonNumber(int MenuIndex, int Button)
   // Returns the Button Number (0 - 674) from the Menu number and the button position
   int ButtonNumb = 0;
 
-  if (MenuIndex <= 10)  // 10 x 15-button main menus
+  if (MenuIndex <= 20)  // 20 x 15-button main menus
   {
     ButtonNumb = (MenuIndex - 1) * 15 + Button;
   }
   if ((MenuIndex >= 41) && (MenuIndex <= 41))  // keyboard
   {
-    ButtonNumb = 150 + (MenuIndex - 41) * 50 + Button;
+    ButtonNumb = 300 + (MenuIndex - 41) * 50 + Button;
   }
   if (MenuIndex == 42) //Edge Case
   {
-    ButtonNumb = 200;
+    ButtonNumb = 350;
   }
   return ButtonNumb;
 }
@@ -1377,8 +1351,6 @@ void wait_touch()
 }
 
 void CalculateMarkers()
-
-
 {
   int maxy;
   int xformaxy = 0;
@@ -1461,35 +1433,13 @@ void CalculateMarkers()
 
 }
 
-void Normalise()
-{
-  normleveloffset = 400 + normlevel * 5;  // 0 = screen bottom, 400 = screen top
-
-  finishednormalising = FALSE;            // Make sure that it is not normalising (ie measuring the baseline)
-
-  while (activescan == TRUE)              // Wait for the end of the current scan
-  {
-    usleep(10);
-  }
-
-  normalising = TRUE;                     // Set the flag for it to measure the baseline
-
-  while (finishednormalising == FALSE)    // Wait for the end of the measurement scan
-  {
-    usleep(10);
-  }
-
-  normalising = FALSE;                    // Stop it measuring
-
-  normalised = TRUE;                      // and start it calculating for subsequent scans
-}
 
 void SetSpanWidth(int button)
 {  
   char ValueToSave[63];
 
   // Stop the scan at the end of the current one and wait for it to stop
-  freeze = TRUE;
+  freeze = true;
   while(! frozen)
   {
     usleep(10);                                   // wait till the end of the scan
@@ -1527,7 +1477,7 @@ void SetSpanWidth(int button)
   NewSpan = true;
 
   DrawSettings();       // New labels
-  freeze = FALSE;
+  freeze = false;
 }
 
 
@@ -1536,7 +1486,7 @@ void SetLimeGain(int button)
   char ValueToSave[63];
 
   // Stop the scan at the end of the current one and wait for it to stop
-  freeze = TRUE;
+  freeze = true;
   while(! frozen)
   {
     usleep(10);                                   // wait till the end of the scan
@@ -1571,7 +1521,7 @@ void SetLimeGain(int button)
   NewGain = true;
 
   //DrawSettings();       // New labels
-  freeze = FALSE;
+  freeze = false;
 }
 
 
@@ -1579,45 +1529,172 @@ void SetLimeGain(int button)
 void SetFreqPreset(int button)
 {  
   char ValueToSave[63];
+  char RequestText[64];
+  char InitText[63];
+  div_t div_10;
+  div_t div_100;
+  div_t div_1000;
+  int amendfreq;
 
-  // Stop the scan at the end of the current one and wait for it to stop
-  freeze = TRUE;
-  while(! frozen)
+  if (CallingMenu == 7)
   {
-    usleep(10);                                   // wait till the end of the scan
-  }
+    // Stop the scan at the end of the current one and wait for it to stop
+    freeze = true;
+    while(! frozen)
+    {
+      usleep(10);                                   // wait till the end of the scan
+    }
 
-  switch (button)
+    switch (button)
+    {
+      case 2:
+        centrefreq = pfreq1;
+      break;
+      case 3:
+        centrefreq = pfreq2;
+      break;
+      case 4:
+        centrefreq = pfreq3;
+      break;
+      case 5:
+        centrefreq = pfreq4;
+      break;
+      case 6:
+        centrefreq = pfreq5;
+      break;
+    }
+
+    // Store the new frequency
+    snprintf(ValueToSave, 63, "%d", centrefreq);
+    SetConfigParam(PATH_CONFIG, "centrefreq", ValueToSave);
+    printf("Centre Freq set to %d \n", centrefreq);
+
+    // Calculate the new settings
+    CalcSpan();
+
+    // Trigger the frequency change
+    NewFreq = true;
+
+    DrawSettings();       // New labels
+    freeze = false;
+  }
+  else if (CallingMenu == 10)  // Amend the preset frequency
   {
-    case 2:
-      centrefreq = 146500;
-    break;
-    case 3:
-      centrefreq = 437000;
-    break;
-    case 4:
-      centrefreq = 748000;
-    break;
-    case 5:
-      centrefreq = 1255000;
-    break;
+
+    // Stop the scan at the end of the current one and wait for it to stop
+    freeze = true;
+    while(! frozen)
+    {
+      usleep(10);                                   // wait till the end of the scan
+    }
+
+    switch (button)
+    {
+      case 2:
+        amendfreq = pfreq1;
+      break;
+      case 3:
+        amendfreq = pfreq2;
+      break;
+      case 4:
+        amendfreq = pfreq3;
+      break;
+      case 5:
+        amendfreq = pfreq4;
+      break;
+      case 6:
+        amendfreq = pfreq5;
+      break;
+    }
+
+    // Define request string
+    strcpy(RequestText, "Enter new preset frequency in MHz");
+
+    // Define initial value and convert to MHz
+    div_10 = div(amendfreq, 10);
+    div_1000 = div(amendfreq, 1000);
+
+    if(div_10.rem != 0)  // last character not zero, so make answer of form xxx.xxx
+    {
+      snprintf(InitText, 10, "%d.%03d", div_1000.quot, div_1000.rem);
+    }
+    else
+    {
+      div_100 = div(amendfreq, 100);
+      if(div_100.rem != 0)  // last but one character not zero, so make answer of form xxx.xx
+      {
+        snprintf(InitText, 10, "%d.%02d", div_1000.quot, div_1000.rem / 10);
+      }
+      else
+      {
+        if(div_1000.rem != 0)  // last but two character not zero, so make answer of form xxx.x
+        {
+          snprintf(InitText, 10, "%d.%d", div_1000.quot, div_1000.rem / 100);
+        }
+        else  // integer MHz, so just xxx (no dp)
+        {
+          snprintf(InitText, 10, "%d", div_1000.quot);
+        }
+      }
+    }
+
+    // Ask for the new value
+    do
+    {
+      Keyboard(RequestText, InitText, 10);
+    }
+    while (strlen(KeyboardReturn) == 0);
+
+    amendfreq = (int)((1000 * atof(KeyboardReturn)) + 0.1);
+    snprintf(ValueToSave, 63, "%d", amendfreq);
+
+    switch (button)
+    {
+      case 2:
+        SetConfigParam(PATH_CONFIG, "pfreq1", ValueToSave);
+        printf("Preset Freq 1 set to %d \n", amendfreq);
+        pfreq1 = amendfreq;
+      break;
+      case 3:
+        SetConfigParam(PATH_CONFIG, "pfreq2", ValueToSave);
+        printf("Preset Freq 2 set to %d \n", amendfreq);
+        pfreq2 = amendfreq;
+      break;
+      case 4:
+        SetConfigParam(PATH_CONFIG, "pfreq3", ValueToSave);
+        printf("Preset Freq 3 set to %d \n", amendfreq);
+        pfreq3 = amendfreq;
+      break;
+      case 5:
+         SetConfigParam(PATH_CONFIG, "pfreq4", ValueToSave);
+        printf("Preset Freq 4 set to %d \n", amendfreq);
+        pfreq4 = amendfreq;
+      break;
+      case 6:
+        SetConfigParam(PATH_CONFIG, "pfreq5", ValueToSave);
+        printf("Preset Freq 5 set to %d \n", amendfreq);
+        pfreq5 = amendfreq;
+      break;
+    }
+    centrefreq = amendfreq;
+
+    // Store the new frequency
+    snprintf(ValueToSave, 63, "%d", centrefreq);
+    SetConfigParam(PATH_CONFIG, "centrefreq", ValueToSave);
+    printf("Centre Freq set to %d \n", centrefreq);
+
+    // Trigger the frequency change
+    NewFreq = true;
+
+    // Tidy up, paint around the screen and then unfreeze
+    CalcSpan();         // work out start and stop freqs
+    clearScreen();
+    DrawEmptyScreen();  // Required to set A value, which is not set in DrawTrace
+    DrawYaxisLabels();  // dB calibration on LHS
+    DrawSettings();     // Start, Stop RBW, Ref level and Title
+    freeze = false;
   }
-
-  // Store the new frequency
-  snprintf(ValueToSave, 63, "%d", centrefreq);
-  SetConfigParam(PATH_CONFIG, "centrefreq", ValueToSave);
-  printf("Centre Freq set to %d \n", centrefreq);
-
-  // Calculate the new settings
-  CalcSpan();
-
-  // Trigger the frequency change
-  NewFreq = true;
-
-  DrawSettings();       // New labels
-  freeze = FALSE;
 }
-
 
 
 void ShiftFrequency(int button)
@@ -1625,7 +1702,7 @@ void ShiftFrequency(int button)
   char ValueToSave[63];
 
   // Stop the scan at the end of the current one and wait for it to stop
-  freeze = TRUE;
+  freeze = true;
   while(! frozen)
   {
     usleep(10);                                   // wait till the end of the scan
@@ -1653,7 +1730,7 @@ void ShiftFrequency(int button)
   NewFreq = true;
 
   DrawSettings();       // New labels
-  freeze = FALSE;
+  freeze = false;
 }
 
 void CalcSpan()    // takes centre frequency and span and calulates startfreq and stopfreq
@@ -1679,14 +1756,13 @@ void ChangeLabel(int button)
 {
   char RequestText[64];
   char InitText[63];
-  bool IsValid = FALSE;
   div_t div_10;
   div_t div_100;
   div_t div_1000;
   char ValueToSave[63];
   
   // Stop the scan at the end of the current one and wait for it to stop
-  freeze = TRUE;
+  freeze = true;
   while(! frozen)
   {
     usleep(10);                                   // wait till the end of the scan
@@ -1765,37 +1841,6 @@ void ChangeLabel(int button)
       SetConfigParam(PATH_CONFIG, "title", PlotTitle);
       printf("Plot Title set to: %s\n", KeyboardReturn);
       break;
-    case 7:                                                       // Set Normalise Level
-      // Define request string
-      strcpy(RequestText, "Enter new Normalise Level (Range 0 to -80)");
-
-      // Define initial value 
-      snprintf(InitText, 10, "%d", normlevel);
-
-      while (IsValid == FALSE)
-      {
-        Keyboard(RequestText, InitText, 4);
-        if (strlen(KeyboardReturn) == 0)
-        {
-          IsValid = FALSE;
-        }
-        else
-        {
-          normlevel = atoi(KeyboardReturn);
-          if ((normlevel >= -80) && (normlevel <= 0))
-          {
-            IsValid = TRUE;
-          }
-          else
-          {
-            IsValid = FALSE;
-          }
-        }
-      }
-      snprintf(ValueToSave, 63, "%d", normlevel);
-      SetConfigParam(PATH_CONFIG, "normlevel", ValueToSave);
-      printf("Normalisation Level set to: %d\n", normlevel);
-      break;
   }
 
   // Tidy up, paint around the screen and then unfreeze
@@ -1804,7 +1849,7 @@ void ChangeLabel(int button)
   DrawEmptyScreen();  // Required to set A value, which is not set in DrawTrace
   DrawYaxisLabels();  // dB calibration on LHS
   DrawSettings();     // Start, Stop RBW, Ref level and Title
-  freeze = FALSE;
+  freeze = false;
 }
 
 
@@ -1838,14 +1883,14 @@ void *WaitButtonEvent(void * arg)
       switch (i)
       {
         case 0:                                            // Capture Snap
-          freeze = TRUE; 
+          freeze = true; 
           SetButtonStatus(ButtonNumber(CurrentMenu, 0), 1);  // hide the capture button 
           UpdateWindow();                                    // paint the hide
           while(! frozen);                                   // wait till the end of the scan
           system("/home/pi/rpidatv/scripts/snap2.sh");
           SetButtonStatus(ButtonNumber(CurrentMenu, 0), 0);
           UpdateWindow();
-          freeze = FALSE;
+          freeze = false;
           break;
         case 2:                                            // Select Settings
           printf("Settings Menu 3 Requested\n");
@@ -1868,6 +1913,7 @@ void *WaitButtonEvent(void * arg)
           printf("Shift Frequency Requested\n");
           ShiftFrequency(i);
           //UpdateWindow();
+          RequestPeakValueZero = true;
           break;
         case 7:                                            // System
           printf("System Menu 4 Requested\n");
@@ -1878,12 +1924,12 @@ void *WaitButtonEvent(void * arg)
           if (freeze)
           {
             SetButtonStatus(ButtonNumber(CurrentMenu, 8), 0);
-            freeze = FALSE;
+            freeze = false;
           }
           else
           {
             SetButtonStatus(ButtonNumber(CurrentMenu, 8), 1);
-            freeze = TRUE;
+            freeze = true;
           }
           UpdateWindow();
           break;
@@ -1900,88 +1946,79 @@ void *WaitButtonEvent(void * arg)
       switch (i)
       {
         case 0:                                            // Capture Snap
-          freeze = TRUE; 
+          freeze = true; 
           SetButtonStatus(ButtonNumber(CurrentMenu, 0), 1);
           UpdateWindow();
           while(! frozen);
           system("/home/pi/rpidatv/scripts/snap2.sh");
           SetButtonStatus(ButtonNumber(CurrentMenu, 0), 0);
           UpdateWindow();
-          freeze = FALSE;
+          freeze = false;
           break;
         case 2:                                            // Peak
-          if ((markeron == FALSE) || (markermode != 2))
+          if ((markeron == false) || (markermode != 2))
           {
             // Freeze the scan to prevent text corruption
-            freeze = TRUE;
+            freeze = true;
             while(! frozen)
             {
               usleep(10);                                   // wait till the end of the scan
             }
-            markeron = TRUE;
+            markeron = true;
             markermode = i;
             SetButtonStatus(ButtonNumber(CurrentMenu, 2), 1);
-            SetButtonStatus(ButtonNumber(CurrentMenu, 3), 0);
             SetButtonStatus(ButtonNumber(CurrentMenu, 4), 0);
           }
           else
           {
-            markeron = FALSE;
+            markeron = false;
             markermode = 7;
             SetButtonStatus(ButtonNumber(CurrentMenu, 2), 0);
-            SetButtonStatus(ButtonNumber(CurrentMenu, 3), 0);
             SetButtonStatus(ButtonNumber(CurrentMenu, 4), 0);
           }
           UpdateWindow();
           freeze = false;
           break;
-        case 3:                                            // Null
-          if ((markeron == FALSE) || (markermode != 3))
+        case 3:                                            // Peak Hold
+        if (PeakPlot == false)
           {
             // Freeze the scan to prevent text corruption
-            freeze = TRUE;
+            freeze = true;
             while(! frozen)
             {
               usleep(10);                                   // wait till the end of the scan
             }
-            markeron = TRUE;
-            markermode = i;
-            SetButtonStatus(ButtonNumber(CurrentMenu, 2), 0);
+            PeakPlot = true;
             SetButtonStatus(ButtonNumber(CurrentMenu, 3), 1);
-            SetButtonStatus(ButtonNumber(CurrentMenu, 4), 0);
           }
           else
           {
-            markeron = FALSE;
-            markermode = 7;
-            SetButtonStatus(ButtonNumber(CurrentMenu, 2), 0);
+            PeakPlot = false;
+            RequestPeakValueZero = true;
             SetButtonStatus(ButtonNumber(CurrentMenu, 3), 0);
-            SetButtonStatus(ButtonNumber(CurrentMenu, 4), 0);
           }
           UpdateWindow();
           freeze = false;
           break;
         case 4:                                            // Manual
-          if ((markeron == FALSE) || (markermode != 4))
+          if ((markeron == false) || (markermode != 4))
           {
             // Freeze the scan to prevent text corruption
-            freeze = TRUE;
+            freeze = true;
             while(! frozen)
             {
               usleep(10);                                   // wait till the end of the scan
             }
-            markeron = TRUE;
+            markeron = true;
             markermode = i;
             SetButtonStatus(ButtonNumber(CurrentMenu, 2), 0);
-            SetButtonStatus(ButtonNumber(CurrentMenu, 3), 0);
             SetButtonStatus(ButtonNumber(CurrentMenu, 4), 1);
           }
           else
           {
-            markeron = FALSE;
+            markeron = false;
             markermode = 7;
             SetButtonStatus(ButtonNumber(CurrentMenu, 2), 0);
-            SetButtonStatus(ButtonNumber(CurrentMenu, 3), 0);
             SetButtonStatus(ButtonNumber(CurrentMenu, 4), 0);
           }
           UpdateWindow();
@@ -2000,8 +2037,10 @@ void *WaitButtonEvent(void * arg)
           }
           break;
         case 7:                                            // No Markers
-          markeron = FALSE;
+          markeron = false;
           markermode = i;
+          PeakPlot = false;
+          RequestPeakValueZero = true;
           SetButtonStatus(ButtonNumber(CurrentMenu, 2), 0);
           SetButtonStatus(ButtonNumber(CurrentMenu, 3), 0);
           SetButtonStatus(ButtonNumber(CurrentMenu, 4), 0);
@@ -2016,12 +2055,12 @@ void *WaitButtonEvent(void * arg)
           if (freeze)
           {
             SetButtonStatus(ButtonNumber(CurrentMenu, 9), 0);
-            freeze = FALSE;
+            freeze = false;
           }
           else
           {
             SetButtonStatus(ButtonNumber(CurrentMenu, 9), 1);
-            freeze = TRUE;
+            freeze = true;
           }
           UpdateWindow();
           break;
@@ -2038,36 +2077,45 @@ void *WaitButtonEvent(void * arg)
       switch (i)
       {
         case 0:                                            // Capture Snap
-          freeze = TRUE; 
+          freeze = true; 
           SetButtonStatus(ButtonNumber(CurrentMenu, 0), 1);
           UpdateWindow();
           while(! frozen);
           system("/home/pi/rpidatv/scripts/snap2.sh");
           SetButtonStatus(ButtonNumber(CurrentMenu, 0), 0);
           UpdateWindow();
-          freeze = FALSE;
+          freeze = false;
           break;
         case 2:                                            // Centre Freq
-        case 6:                                            // Title
           ChangeLabel(i);
+          CurrentMenu = 3;
           UpdateWindow();          
+          RequestPeakValueZero = true;
           break;
         case 3:                                            // Frequency Presets
           printf("Frequency Preset Menu 7 Requested\n");
-          CurrentMenu=7;
+          CurrentMenu = 7;
+          Start_Highlights_Menu7();
           UpdateWindow();
+          RequestPeakValueZero = true;
           break;
         case 4:                                            // Span Width
           printf("Span Width Menu 6 Requested\n");
-          CurrentMenu=6;
+          CurrentMenu = 6;
           Start_Highlights_Menu6();
           UpdateWindow();
+          RequestPeakValueZero = true;
           break;
         case 5:                                            // Lime Gain
           printf("Lime Gain Menu 8 Requested\n");
-          CurrentMenu=8;
+          CurrentMenu = 8;
           Start_Highlights_Menu8();
           UpdateWindow();
+          RequestPeakValueZero = true;
+          break;
+        case 6:                                            // Title
+          ChangeLabel(i);
+          UpdateWindow();          
           break;
         case 7:                                            // Return to Main Menu
           printf("Main Menu 1 Requested\n");
@@ -2078,12 +2126,12 @@ void *WaitButtonEvent(void * arg)
           if (freeze)
           {
             SetButtonStatus(ButtonNumber(CurrentMenu, 8), 0);
-            freeze = FALSE;
+            freeze = false;
           }
           else
           {
             SetButtonStatus(ButtonNumber(CurrentMenu, 8), 1);
-            freeze = TRUE;
+            freeze = true;
           }
           UpdateWindow();
           break;
@@ -2100,18 +2148,18 @@ void *WaitButtonEvent(void * arg)
       switch (i)
       {
         case 0:                                            // Capture Snap
-          freeze = TRUE; 
+          freeze = true; 
           SetButtonStatus(ButtonNumber(CurrentMenu, 0), 1);
           UpdateWindow();
           while(! frozen);
           system("/home/pi/rpidatv/scripts/snap2.sh");
           SetButtonStatus(ButtonNumber(CurrentMenu, 0), 0);
           UpdateWindow();
-          freeze = FALSE;
+          freeze = false;
           break;
         case 2:                                            // Snap Viewer
-          freeze = TRUE;
-          while (frozen == FALSE)   // Stop writing to screen
+          freeze = true;
+          while (frozen == false)   // Stop writing to screen
           {
             usleep(10);
           }
@@ -2125,7 +2173,7 @@ void *WaitButtonEvent(void * arg)
           freeze = false;           // Restart the scan
           break;
         case 3:                                            // Restart BandView
-          freeze = TRUE;
+          freeze = true;
           usleep(100000);
           setBackColour(0, 0, 0);
           clearScreen();
@@ -2134,7 +2182,7 @@ void *WaitButtonEvent(void * arg)
           cleanexit(136);
           break;
         case 4:                                            // Exit to Portsdown
-          freeze = TRUE;
+          freeze = true;
           usleep(100000);
           setBackColour(0, 0, 0);
           clearScreen();
@@ -2145,7 +2193,8 @@ void *WaitButtonEvent(void * arg)
         case 5:                                            // Shutdown
           system("sudo shutdown now");
           break;
-        case 6:                                            // Spare
+        case 6:                                            // ReCal Lime
+          NewCal = true;
           break;
         case 7:                                            // Return to Main Menu
           printf("Main Menu 1 Requested\n");
@@ -2156,12 +2205,12 @@ void *WaitButtonEvent(void * arg)
           if (freeze)
           {
             SetButtonStatus(ButtonNumber(CurrentMenu, 8), 0);
-            freeze = FALSE;
+            freeze = false;
           }
           else
           {
             SetButtonStatus(ButtonNumber(CurrentMenu, 8), 1);
-            freeze = TRUE;
+            freeze = true;
           }
           UpdateWindow();
           break;
@@ -2178,16 +2227,224 @@ void *WaitButtonEvent(void * arg)
       switch (i)
       {
         case 0:                                            // Capture Snap
-          freeze = TRUE; 
+          freeze = true; 
           SetButtonStatus(ButtonNumber(CurrentMenu, 0), 1);
           UpdateWindow();
           while(! frozen);
           system("/home/pi/rpidatv/scripts/snap2.sh");
           SetButtonStatus(ButtonNumber(CurrentMenu, 0), 0);
           UpdateWindow();
-          freeze = FALSE;
+          freeze = false;
           break;
         case 2:                                            // Classic SA Mode
+          break;
+        case 3:                                            // 
+          break;
+        case 4:                                            // 
+          break;
+        case 5:                                            // 
+          break;
+        case 6:                                            // 
+          printf("Config Menu 9 Requested\n");
+          CurrentMenu = 9;
+          UpdateWindow();
+          break;
+        case 7:                                            // Return to Main Menu
+          printf("Main Menu 1 Requested\n");
+          CurrentMenu=1;
+          UpdateWindow();
+          break;
+        case 8:
+          if (freeze)
+          {
+            SetButtonStatus(ButtonNumber(CurrentMenu, 8), 0);
+            freeze = false;
+          }
+          else
+          {
+            SetButtonStatus(ButtonNumber(CurrentMenu, 8), 1);
+            freeze = true;
+          }
+          UpdateWindow();
+          break;
+        default:
+          printf("Menu 5 Error\n");
+      }
+      continue;  // Completed Menu 5 action, go and wait for touch
+    }
+
+    if (CurrentMenu == 6)  // Span Width Menu
+    {
+      printf("Button Event %d, Entering Menu 6 Case Statement\n",i);
+      CallingMenu = 6;
+      switch (i)
+      {
+        case 0:                                            // Capture Snap
+          freeze = true; 
+          SetButtonStatus(ButtonNumber(CurrentMenu, 0), 1);
+          UpdateWindow();
+          while(! frozen);
+          system("/home/pi/rpidatv/scripts/snap2.sh");
+          SetButtonStatus(ButtonNumber(CurrentMenu, 0), 0);
+          Start_Highlights_Menu6();
+          UpdateWindow();
+          freeze = false;
+          break;
+        case 2:                                            // 0.5
+        case 3:                                            // 1
+        case 4:                                            // 2
+        case 5:                                            // 5
+        case 6:                                            // 10
+        case 7:                                            // 20
+          SetSpanWidth(i);
+          CurrentMenu = 3;
+          UpdateWindow();
+          break;
+        case 8:                                            // Return to Settings Menu
+          CurrentMenu=3;
+          UpdateWindow();
+          break;
+        case 9:
+          if (freeze)
+          {
+            SetButtonStatus(ButtonNumber(CurrentMenu, 9), 0);
+            freeze = false;
+          }
+          else
+          {
+            SetButtonStatus(ButtonNumber(CurrentMenu, 9), 1);
+            freeze = true;
+          }
+          Start_Highlights_Menu6();
+          UpdateWindow();
+          break;
+        default:
+          printf("Menu 6 Error\n");
+      }
+      continue;  // Completed Menu 6 action, go and wait for touch
+    }
+
+    if (CurrentMenu == 7)  // Frequency Preset Menu
+    {
+      printf("Button Event %d, Entering Menu 7 Case Statement\n",i);
+      CallingMenu = 7;
+      switch (i)
+      {
+        case 0:                                            // Capture Snap
+          freeze = true; 
+          SetButtonStatus(ButtonNumber(CurrentMenu, 0), 1);
+          UpdateWindow();
+          while(! frozen);
+          system("/home/pi/rpidatv/scripts/snap2.sh");
+          SetButtonStatus(ButtonNumber(CurrentMenu, 0), 0);
+          UpdateWindow();
+          freeze = false;
+          break;
+        case 2:                                            // pfreq1
+        case 3:                                            // pfreq2 
+        case 4:                                            // pfreq3
+        case 5:                                            // pfreq4
+        case 6:                                            // pfreq5
+          SetFreqPreset(i);
+          CurrentMenu = 3;
+          UpdateWindow();
+          break;
+        case 7:                                            // Return to Settings Menu
+          printf("Settings Menu 3 requested\n");
+          CurrentMenu=3;
+          UpdateWindow();
+          break;
+        case 8:
+          if (freeze)
+          {
+            SetButtonStatus(ButtonNumber(CurrentMenu, 8), 0);
+            freeze = false;
+          }
+          else
+          {
+            SetButtonStatus(ButtonNumber(CurrentMenu, 8), 1);
+            freeze = true;
+          }
+          UpdateWindow();
+          break;
+        default:
+          printf("Menu 5 Error\n");
+      }
+      continue;  // Completed Menu 5 action, go and wait for touch
+    }
+
+    if (CurrentMenu == 8)  // LimeGain Menu
+    {
+      printf("Button Event %d, Entering Menu 8 Case Statement\n",i);
+      CallingMenu = 8;
+      switch (i)
+      {
+        case 0:                                            // Capture Snap
+          freeze = true; 
+          SetButtonStatus(ButtonNumber(CurrentMenu, 0), 1);
+          UpdateWindow();
+          while(! frozen);
+          system("/home/pi/rpidatv/scripts/snap2.sh");
+          SetButtonStatus(ButtonNumber(CurrentMenu, 0), 0);
+          Start_Highlights_Menu8();
+          UpdateWindow();
+          freeze = false;
+          break;
+        case 2:                                            // 100%
+        case 3:                                            // 90%
+        case 4:                                            // 70%
+        case 5:                                            // 50%
+        case 6:                                            // 30%
+          SetLimeGain(i);
+          CurrentMenu = 3;
+          UpdateWindow();
+          break;
+        case 7:                                            // Return to Settings Menu
+          printf("Settings Menu 3 requested\n");
+          CurrentMenu=3;
+          UpdateWindow();
+          break;
+        case 8:
+          if (freeze)
+          {
+            SetButtonStatus(ButtonNumber(CurrentMenu, 8), 0);
+            freeze = false;
+          }
+          else
+          {
+            SetButtonStatus(ButtonNumber(CurrentMenu, 8), 1);
+            freeze = true;
+          }
+          Start_Highlights_Menu8();
+          UpdateWindow();
+          break;
+        default:
+          printf("Menu 8 Error\n");
+      }
+      continue;  // Completed Menu 8 action, go and wait for touch
+    }
+
+    if (CurrentMenu == 9)  // Config Menu
+    {
+      printf("Button Event %d, Entering Menu 9 Case Statement\n",i);
+      CallingMenu = 9;
+      switch (i)
+      {
+        case 0:                                            // Capture Snap
+          freeze = true; 
+          SetButtonStatus(ButtonNumber(CurrentMenu, 0), 1);
+          UpdateWindow();
+          while(! frozen);
+          system("/home/pi/rpidatv/scripts/snap2.sh");
+          SetButtonStatus(ButtonNumber(CurrentMenu, 0), 0);
+          UpdateWindow();
+          freeze = false;
+          break;
+        case 2:                                            // Freq Presets
+          printf("Freq Presets Menu 10 Requested\n");
+          CurrentMenu = 10;
+          Start_Highlights_Menu10();
+          UpdateWindow();
           break;
         case 3:                                            // 
           break;
@@ -2206,174 +2463,69 @@ void *WaitButtonEvent(void * arg)
           if (freeze)
           {
             SetButtonStatus(ButtonNumber(CurrentMenu, 8), 0);
-            freeze = FALSE;
+            freeze = false;
           }
           else
           {
             SetButtonStatus(ButtonNumber(CurrentMenu, 8), 1);
-            freeze = TRUE;
+            freeze = true;
           }
           UpdateWindow();
           break;
         default:
-          printf("Menu 5 Error\n");
+          printf("Menu 9 Error\n");
       }
-      continue;  // Completed Menu 5 action, go and wait for touch
+      continue;  // Completed Menu 9 action, go and wait for touch
     }
 
-    if (CurrentMenu == 6)  // Span Width Menu
+    if (CurrentMenu == 10)  // Frequency Preset Setting Menu
     {
-      printf("Button Event %d, Entering Menu 6 Case Statement\n",i);
-      CallingMenu = 6;
+      printf("Button Event %d, Entering Menu 10 Case Statement\n",i);
+      CallingMenu = 10;
       switch (i)
       {
         case 0:                                            // Capture Snap
-          freeze = TRUE; 
-          SetButtonStatus(ButtonNumber(CurrentMenu, 0), 1);
-          UpdateWindow();
-          while(! frozen);
-          system("/home/pi/rpidatv/scripts/snap2.sh");
-          SetButtonStatus(ButtonNumber(CurrentMenu, 0), 0);
-          Start_Highlights_Menu6();
-          UpdateWindow();
-          freeze = FALSE;
-          break;
-        case 2:                                            // 0.5
-        case 3:                                            // 1
-        case 4:                                            // 2
-        case 5:                                            // 5
-        case 6:                                            // 10
-        case 7:                                            // 20
-          SetSpanWidth(i);
-          printf("Main Menu 1 Requested\n");
-          CurrentMenu=1;
-          UpdateWindow();
-          break;
-        case 8:                                            // Return to Settings Menu
-          printf("Settings Menu 3 requested\n");
-          CurrentMenu=3;
-          UpdateWindow();
-          break;
-        case 9:
-          if (freeze)
-          {
-            SetButtonStatus(ButtonNumber(CurrentMenu, 9), 0);
-            freeze = FALSE;
-          }
-          else
-          {
-            SetButtonStatus(ButtonNumber(CurrentMenu, 9), 1);
-            freeze = TRUE;
-          }
-          Start_Highlights_Menu6();
-          UpdateWindow();
-          break;
-        default:
-          printf("Menu 6 Error\n");
-      }
-      continue;  // Completed Menu 6 action, go and wait for touch
-    }
-
-    if (CurrentMenu == 7)  // Frequency Preset Menu
-    {
-      printf("Button Event %d, Entering Menu 7 Case Statement\n",i);
-      CallingMenu = 7;
-      switch (i)
-      {
-        case 0:                                            // Capture Snap
-          freeze = TRUE; 
+          freeze = true; 
           SetButtonStatus(ButtonNumber(CurrentMenu, 0), 1);
           UpdateWindow();
           while(! frozen);
           system("/home/pi/rpidatv/scripts/snap2.sh");
           SetButtonStatus(ButtonNumber(CurrentMenu, 0), 0);
           UpdateWindow();
-          freeze = FALSE;
+          freeze = false;
           break;
-        case 2:                                            // XY Mode
-        case 3:                                            // Continuous Scan
-        case 4:                                            // 
-        case 5:                                            // 
-        case 6:                                            //
+        case 2:                                            // pfreq1
+        case 3:                                            // pfreq2 
+        case 4:                                            // pfreq3
+        case 5:                                            // pfreq4
+        case 6:                                            // pfreq5
           SetFreqPreset(i);
-          printf("Main Menu 1 Requested\n");
-          CurrentMenu=1;
+          CurrentMenu = 10;
+          Start_Highlights_Menu10();
           UpdateWindow();
           break;
-        case 7:                                            // Return to Settings Menu
-          printf("Settings Menu 3 requested\n");
-          CurrentMenu=3;
+        case 7:                                            // Return to Main Menu
+          printf("Settings Menu 1 requested\n");
+          CurrentMenu=1;
           UpdateWindow();
           break;
         case 8:
           if (freeze)
           {
             SetButtonStatus(ButtonNumber(CurrentMenu, 8), 0);
-            freeze = FALSE;
+            freeze = false;
           }
           else
           {
             SetButtonStatus(ButtonNumber(CurrentMenu, 8), 1);
-            freeze = TRUE;
+            freeze = true;
           }
           UpdateWindow();
           break;
         default:
-          printf("Menu 5 Error\n");
+          printf("Menu 10 Error\n");
       }
-      continue;  // Completed Menu 5 action, go and wait for touch
-    }
-
-    if (CurrentMenu == 8)  // LimeGain Menu
-    {
-      printf("Button Event %d, Entering Menu 8 Case Statement\n",i);
-      CallingMenu = 8;
-      switch (i)
-      {
-        case 0:                                            // Capture Snap
-          freeze = TRUE; 
-          SetButtonStatus(ButtonNumber(CurrentMenu, 0), 1);
-          UpdateWindow();
-          while(! frozen);
-          system("/home/pi/rpidatv/scripts/snap2.sh");
-          SetButtonStatus(ButtonNumber(CurrentMenu, 0), 0);
-          Start_Highlights_Menu8();
-          UpdateWindow();
-          freeze = FALSE;
-          break;
-        case 2:                                            // 100%
-        case 3:                                            // 90%
-        case 4:                                            // 70%
-        case 5:                                            // 50%
-        case 6:                                            // 30%
-          SetLimeGain(i);
-          printf("Main Menu 1 Requested\n");
-          CurrentMenu=1;
-          UpdateWindow();
-          break;
-        case 7:                                            // Return to Settings Menu
-          printf("Settings Menu 3 requested\n");
-          CurrentMenu=3;
-          UpdateWindow();
-          break;
-        case 8:
-          if (freeze)
-          {
-            SetButtonStatus(ButtonNumber(CurrentMenu, 8), 0);
-            freeze = FALSE;
-          }
-          else
-          {
-            SetButtonStatus(ButtonNumber(CurrentMenu, 8), 1);
-            freeze = TRUE;
-          }
-          Start_Highlights_Menu8();
-          UpdateWindow();
-          break;
-        default:
-          printf("Menu 8 Error\n");
-      }
-      continue;  // Completed Menu 8 action, go and wait for touch
+      continue;  // Completed Menu 10 action, go and wait for touch
     }
 
   }
@@ -2448,8 +2600,8 @@ void Define_Menu2()                                         // Marker Menu
   AddButtonStatus(button, "Peak", &Green);
 
   button = CreateButton(2, 3);
-  AddButtonStatus(button, "Null", &Blue);
-  AddButtonStatus(button, "Null", &Green);
+  AddButtonStatus(button, "Peak^Hold", &Blue);
+  AddButtonStatus(button, "Peak^Hold", &Green);
 
   button = CreateButton(2, 4);
   AddButtonStatus(button, "Manual", &Blue);
@@ -2543,9 +2695,9 @@ void Define_Menu4()                                         // System Menu
   AddButtonStatus(button, "Shutdown^System", &Blue);
   AddButtonStatus(button, " ", &Green);
 
-  //button = CreateButton(4, 6);
-  //AddButtonStatus(button, " ", &Blue);
-  //AddButtonStatus(button, " ", &Green);
+  button = CreateButton(4, 6);
+  AddButtonStatus(button, "Re-cal^LimeSDR", &Blue);
+  AddButtonStatus(button, " ", &Green);
 
   button = CreateButton(4, 7);
   AddButtonStatus(button, "Return to^Main Menu", &DBlue);
@@ -2583,9 +2735,8 @@ void Define_Menu5()                                          // Mode Menu
   //AddButtonStatus(button, " ", &Blue);
   //AddButtonStatus(button, " ", &Green);
 
-  //button = CreateButton(5, 6);
-  //AddButtonStatus(button, " ", &Blue);
-  //AddButtonStatus(button, " ", &Green);
+  button = CreateButton(5, 6);
+  AddButtonStatus(button, "Set^Config", &Blue);
 
   button = CreateButton(5, 7);
   AddButtonStatus(button, "Return to^Main Menu", &DBlue);
@@ -2719,9 +2870,9 @@ void Define_Menu7()                                            //Presets Menu
   AddButtonStatus(button, "1255 MHz", &Blue);
   AddButtonStatus(button, "1255 MHz", &Green);
 
-  //button = CreateButton(7, 6);
-  //AddButtonStatus(button, "10 MHz", &Blue);
-  //AddButtonStatus(button, "10 MHz", &Green);
+  button = CreateButton(7, 6);
+  AddButtonStatus(button, "2409 MHz", &Blue);
+  AddButtonStatus(button, "2409 MHz", &Green);
 
   button = CreateButton(7, 7);
   AddButtonStatus(button, "Cancel", &DBlue);
@@ -2730,6 +2881,73 @@ void Define_Menu7()                                            //Presets Menu
   AddButtonStatus(button, "Freeze", &Blue);
   AddButtonStatus(button, "Unfreeze", &Green);
 }
+
+void Start_Highlights_Menu7()
+{
+  char ButtText[15];
+  snprintf(ButtText, 14, "%0.1f MHz", ((float)pfreq1) / 1000);
+  AmendButtonStatus(ButtonNumber(CurrentMenu, 2), 0, ButtText, &Blue);
+  AmendButtonStatus(ButtonNumber(CurrentMenu, 2), 1, ButtText, &Green);
+
+  snprintf(ButtText, 14, "%0.1f MHz", ((float)pfreq2) / 1000);
+  AmendButtonStatus(ButtonNumber(CurrentMenu, 3), 0, ButtText, &Blue);
+  AmendButtonStatus(ButtonNumber(CurrentMenu, 3), 1, ButtText, &Green);
+
+  snprintf(ButtText, 14, "%0.1f MHz", ((float)pfreq3) / 1000);
+  AmendButtonStatus(ButtonNumber(CurrentMenu, 4), 0, ButtText, &Blue);
+  AmendButtonStatus(ButtonNumber(CurrentMenu, 4), 1, ButtText, &Green);
+
+  snprintf(ButtText, 14, "%0.1f MHz", ((float)pfreq4) / 1000);
+  AmendButtonStatus(ButtonNumber(CurrentMenu, 5), 0, ButtText, &Blue);
+  AmendButtonStatus(ButtonNumber(CurrentMenu, 5), 1, ButtText, &Green);
+
+  snprintf(ButtText, 14, "%0.1f MHz", ((float)pfreq5) / 1000);
+  AmendButtonStatus(ButtonNumber(CurrentMenu, 6), 0, ButtText, &Blue);
+  AmendButtonStatus(ButtonNumber(CurrentMenu, 6), 1, ButtText, &Green);
+
+
+  if (centrefreq == pfreq1)
+  {
+    SetButtonStatus(ButtonNumber(CurrentMenu, 2), 1);
+  }
+  else
+  {
+    SetButtonStatus(ButtonNumber(CurrentMenu, 2), 0);
+  }
+  if (centrefreq == pfreq2)
+  {
+    SetButtonStatus(ButtonNumber(CurrentMenu, 3), 1);
+  }
+  else
+  {
+    SetButtonStatus(ButtonNumber(CurrentMenu, 3), 0);
+  }
+  if (centrefreq == pfreq3)
+  {
+    SetButtonStatus(ButtonNumber(CurrentMenu, 4), 1);
+  }
+  else
+  {
+    SetButtonStatus(ButtonNumber(CurrentMenu, 4), 0);
+  }
+  if (centrefreq == pfreq4)
+  {
+    SetButtonStatus(ButtonNumber(CurrentMenu, 5), 1);
+  }
+  else
+  {
+    SetButtonStatus(ButtonNumber(CurrentMenu, 5), 0);
+  }
+  if (centrefreq == pfreq5)
+  {
+    SetButtonStatus(ButtonNumber(CurrentMenu, 6), 1);
+  }
+  else
+  {
+    SetButtonStatus(ButtonNumber(CurrentMenu, 6), 0);
+  }
+}
+
 
 void Define_Menu8()                                    // Lime Gain Menu
 {
@@ -2814,6 +3032,97 @@ void Start_Highlights_Menu8()
     SetButtonStatus(ButtonNumber(CurrentMenu, 6), 0);
   }
 }
+
+void Define_Menu9()                                          // Cnfig Menu
+{
+  int button = 0;
+
+  button = CreateButton(9, 0);
+  AddButtonStatus(button, "Capture^Snap", &DGrey);
+  AddButtonStatus(button, " ", &Black);
+
+  button = CreateButton(9, 1);
+  AddButtonStatus(button, "Config^Menu", &Black);
+
+  button = CreateButton(9, 2);
+  AddButtonStatus(button, "Set Freq^Presets", &Blue);
+
+  //button = CreateButton(9, 3);
+  //AddButtonStatus(button, "Y Plot", &Blue);
+  //AddButtonStatus(button, " ", &Green);
+
+  //button = CreateButton(9, 4);
+  //AddButtonStatus(button, " ", &Blue);
+  //AddButtonStatus(button, " ", &Green);
+
+  //button = CreateButton(9, 5);
+  //AddButtonStatus(button, " ", &Blue);
+  //AddButtonStatus(button, " ", &Green);
+
+  //button = CreateButton(9 6);
+  //AddButtonStatus(button, "Set^Config", &Blue);
+
+  button = CreateButton(9, 7);
+  AddButtonStatus(button, "Return to^Main Menu", &DBlue);
+
+  button = CreateButton(9, 8);
+  AddButtonStatus(button, "Freeze", &Blue);
+  AddButtonStatus(button, "Unfreeze", &Green);
+}
+
+void Define_Menu10()                                          // Set Freq Presets Menu
+{
+  int button = 0;
+
+  button = CreateButton(10, 0);
+  AddButtonStatus(button, "Capture^Snap", &DGrey);
+  AddButtonStatus(button, " ", &Black);
+
+  button = CreateButton(10, 1);
+  AddButtonStatus(button, "Set Freq^Presets", &Black);
+
+  button = CreateButton(10, 2);
+  AddButtonStatus(button, "Preset 1", &Blue);
+
+  button = CreateButton(10, 3);
+  AddButtonStatus(button, "Preset 2", &Blue);
+
+  button = CreateButton(10, 4);
+  AddButtonStatus(button, "Preset 3", &Blue);
+
+  button = CreateButton(10, 5);
+  AddButtonStatus(button, "Preset 4", &Blue);
+
+  button = CreateButton(10, 6);
+  AddButtonStatus(button, "Preset 5", &Blue);
+
+  button = CreateButton(10, 7);
+  AddButtonStatus(button, "Return to^Main Menu", &DBlue);
+
+  button = CreateButton(10, 8);
+  AddButtonStatus(button, "Freeze", &Blue);
+  AddButtonStatus(button, "Unfreeze", &Green);
+}
+
+void Start_Highlights_Menu10()
+{
+  char ButtText[31];
+  snprintf(ButtText, 30, "Preset 1^%0.1f MHz", ((float)pfreq1) / 1000);
+  AmendButtonStatus(ButtonNumber(CurrentMenu, 2), 0, ButtText, &Blue);
+
+  snprintf(ButtText, 30, "Preset 2^%0.1f MHz", ((float)pfreq2) / 1000);
+  AmendButtonStatus(ButtonNumber(CurrentMenu, 3), 0, ButtText, &Blue);
+
+  snprintf(ButtText, 30, "Preset 3^%0.1f MHz", ((float)pfreq3) / 1000);
+  AmendButtonStatus(ButtonNumber(CurrentMenu, 4), 0, ButtText, &Blue);
+
+  snprintf(ButtText, 30, "Preset 4^%0.1f MHz", ((float)pfreq4) / 1000);
+  AmendButtonStatus(ButtonNumber(CurrentMenu, 5), 0, ButtText, &Blue);
+
+  snprintf(ButtText, 30, "Preset 5^%0.1f MHz", ((float)pfreq5) / 1000);
+  AmendButtonStatus(ButtonNumber(CurrentMenu, 6), 0, ButtText, &Blue);
+}
+
 
 void Define_Menu41()
 {
@@ -3382,7 +3691,7 @@ void DrawTrace(int xoffset, int prev2, int prev1, int current)
 
   // Draw the markers
 
-  if (markeron == TRUE)
+  if (markeron == true)
   {
     MarkerGrn(markerx, xpos, markery);
   }
@@ -3426,8 +3735,9 @@ int main(void)
   int screenYmax, screenYmin;
   int i;
   int pixel;
+  int PeakValueZeroCounter = 0;
 
-  wfall = FALSE;
+  wfall = false;
 
   // Catch sigaction and call terminate
   for (i = 0; i < 16; i++)
@@ -3439,10 +3749,10 @@ int main(void)
   }
 
   // Set up wiringPi module
-  if (wiringPiSetup() < 0)
-  {
-    return 0;
-  }
+  //if (wiringPiSetup() < 0)
+  //{
+  //  return 0;
+  //}
 
   // Check for presence of touchscreen
   for(NoDeviceEvent = 0; NoDeviceEvent < 7; NoDeviceEvent++)
@@ -3476,6 +3786,8 @@ int main(void)
   Define_Menu6();
   Define_Menu7();
   Define_Menu8();
+  Define_Menu9();
+  Define_Menu10();
   Define_Menu41();
 
   ReadSavedParams();
@@ -3483,13 +3795,9 @@ int main(void)
   // Create Wait Button thread
   pthread_create (&thbutton, NULL, &WaitButtonEvent, NULL);
 
-  //signal(SIGINT, sigint_handler);
-  //signal(SIGTERM, sigint_handler);
+  // Initialise screen and splash
 
-
-  /* Initialise screen and splash */
-
-  if (wfall == TRUE)
+  if (wfall == true)
   {
     if(!screen_init())
     {
@@ -3502,7 +3810,7 @@ int main(void)
     initScreen();
   }
 
-  MsgBox4("Starting the Band Viewer", "Profiling ffts on first use", "Please wait 80 seconds", "No delay next time");
+  MsgBox4("Starting the Band Viewer", "Profiling FFTs on first use", "Please wait 80 seconds", "No delay next time");
 
   printf("Profiling FFTs..\n");
   fftwf_import_wisdom_from_filename("/home/pi/.fftwf_wisdom");
@@ -3532,7 +3840,7 @@ int main(void)
   }
   pthread_setname_np(fft_thread_obj, "FFT");
 
-  if (wfall == TRUE)
+  if (wfall == true)
   {
     /* Screen Render (backbuffer -> screen) Thread */
     if(pthread_create(&screen_thread_obj, NULL, screen_thread, &app_exit))
@@ -3557,39 +3865,54 @@ int main(void)
 
     UpdateWindow();     // Draw the buttons
 
-    normalised = FALSE;
     while(true)
     {
       //do  // Wait here for refresh?
       //{
       //  usleep(1);
       //}
-      //while (ContScan == FALSE);
+      //while (ContScan == false);
 
-      activescan = TRUE;
+      activescan = true;
 
       for (pixel = 8; pixel < 507; pixel++)
       {
         DrawTrace((pixel - 6), y[pixel - 2], y[pixel - 1], y[pixel]);
 	    //printf("pixel=%d, prev2=%d, prev1=%d, current=%d\n", pixel, y[pixel - 2], y[pixel - 1], y[pixel]);
+
+        if (PeakPlot == true)
+        {
+          // draw [pixel - 1] here based on PeakValue[pixel -1]
+          if (y[pixel - 1] > PeakValue[pixel -1])
+          {
+            PeakValue[pixel - 1] = y[pixel - 1];
+          }
+          setPixelNoA(pixel + 93, 409 - PeakValue[pixel - 1], 255, 0, 63);
+        }
+
         while (freeze)
         {
-          frozen = TRUE;
+          frozen = true;
         }
-        frozen = FALSE;
+        frozen = false;
       }
-      activescan = FALSE;
+      activescan = false;
 
-      if (normalising == true)
-      {
-        finishednormalising = true;
-      }
-
-      if (markeron == TRUE)
+      if (markeron == true)
       {
         CalculateMarkers();
       }
 
+      if (RequestPeakValueZero == true)
+      {
+        PeakValueZeroCounter++;
+        if (PeakValueZeroCounter > 19)
+        {
+          memset(PeakValue, 0, sizeof(PeakValue));
+          PeakValueZeroCounter = 0;
+          RequestPeakValueZero = false;
+        }
+      }
       tracecount++;
     }
   }

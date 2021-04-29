@@ -1,3 +1,7 @@
+202104290
+Add LimeSDR USB to Band Viewer
+Band Viewer Enhancements
+
 202104130
 Add Lime Band Viewer
 
