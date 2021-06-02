@@ -50,3 +50,7 @@ cp -f $PATHSCRIPT"/configs/jetson_config.txt.factory" $PATHSCRIPT"/jetson_config
 cp -f $PATHSCRIPT"/longmynd_config.txt" $PATHSCRIPT"/longmynd_config.txt.bak"
 cp -f $PATHSCRIPT"/configs/longmynd_config.txt.factory" $PATHSCRIPT"/longmynd_config.txt"
 
+# portsdown_C_codes.txt
+cp -f $PATHSCRIPT"/portsdown_C_codes.txt" $PATHSCRIPT"/portsdown_C_codes.txt.bak"
+cp -f $PATHSCRIPT"/configs/portsdown_C_codes.txt.factory" $PATHSCRIPT"/portsdown_C_codes.txt"
+
