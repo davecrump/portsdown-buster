@@ -66,6 +66,7 @@ Rewitten by Dave, G8GKQ
 #define PATH_LMCONFIG "/home/pi/rpidatv/scripts/longmynd_config.txt"
 #define PATH_LIME_CAL "/home/pi/rpidatv/scripts/limecalfreq.txt"
 #define PATH_C_NUMBERS "/home/pi/rpidatv/scripts/portsdown_C_codes.txt"
+#define PATH_BV_CONFIG "/home/pi/rpidatv/src/bandview/bandview_config.txt"
 
 #define PI 3.14159265358979323846
 #define deg2rad(DEG) ((DEG)*((PI)/(180.0)))
@@ -14309,6 +14310,8 @@ void waituntil(int w,int h)
   rawX = 0;
   rawY = 0;
   int buffertouch = 0;
+  char ValueToSave[63];
+
   // Start the main loop for the Touchscreen
   for (;;)
   {
@@ -15491,12 +15494,27 @@ void waituntil(int w,int h)
           if (strcmp(LMRXmode, "sat") == 0)
           {
             BackgroundRGB(0, 0, 0, 255);
-            Start(wscreen,hscreen);
+            Start(wscreen, hscreen);
             LMRX(i);
-            BackgroundRGB(0, 0, 0, 255);
-            Start_Highlights_Menu8();
-            UpdateWindow();
           }
+          else                                           // Terrestrial, so set band viewer freq and exit to bandviewer
+          {
+            if (((CheckLimeMiniConnect() == 0) || (CheckLimeUSBConnect() == 0)) && (strcmp(DisplayType, "Element14_7") == 0))
+            {
+              snprintf(ValueToSave, 63, "%d", LMRXfreq[0]);
+              SetConfigParam(PATH_BV_CONFIG, "centrefreq", ValueToSave);
+              DisplayLogo();
+              cleanexit(136);
+            }
+            else
+            {
+              MsgBox2("LimeSDR and 7 inch screen", "required for BandViewer");
+              wait_touch();
+            }
+          }
+          BackgroundRGB(0, 0, 0, 255);
+          Start_Highlights_Menu8();
+          UpdateWindow();
           break;
         case 5:                                          // Change Freq
         case 6:
@@ -18720,6 +18738,8 @@ void Define_Menu8()
   button = CreateButton(8, 4);
   AddButtonStatus(button, "Beacon^MER", &Blue);
   AddButtonStatus(button, "Beacon^MER", &Grey);
+  AddButtonStatus(button, "BandViewer^on RX freq", &Blue);
+  AddButtonStatus(button, "BandViewer^on RX freq", &Grey);
 
   // 2nd Row, Menu 8.  
 
@@ -18818,18 +18838,25 @@ void Start_Highlights_Menu8()
   div_t div_100;
   div_t div_1000;
 
-  // Freq buttons
-
+  // Sort Beacon MER Button / BandViewer Button
   if (strcmp(LMRXmode, "terr") == 0)
   {
     indexoffset = 10;
-    SetButtonStatus(ButtonNumber(CurrentMenu, 4), 1);
+    if (((CheckLimeMiniConnect() == 0) || (CheckLimeUSBConnect() == 0)) && (strcmp(DisplayType, "Element14_7") == 0))
+    {
+      SetButtonStatus(ButtonNumber(CurrentMenu, 4), 2);
+    }
+    else  // Grey out BandViewer Button
+    {
+      SetButtonStatus(ButtonNumber(CurrentMenu, 4), 3);
+    }
   }
   else
   {
     SetButtonStatus(ButtonNumber(CurrentMenu, 4), 0);
   }
 
+  // Freq buttons
   for(i = 1; i <= 10; i = i + 1)
   {
     if (i <= 5)
