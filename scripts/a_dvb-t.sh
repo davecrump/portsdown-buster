@@ -77,7 +77,4 @@ let BITRATE_TS=$BITRATE_TS/100
     VIDEO_HEIGHT=120
   fi
 
-# awk uses scientific notation above 2.1e9, so:
-FREQ_OUTPUTHZ=`echo - | awk '{print '$FREQ_OUTPUT' * 100000}'`
-FREQ_OUTPUTHZ="$FREQ_OUTPUTHZ"0
 

@@ -191,7 +191,14 @@ if [ "$MODE_INPUT" == "CAMMPEG-2" ] || [ "$MODE_INPUT" == "ANALOGMPEG-2" ]; then
   if [ "$OPSTD" == "480" ]; then
     let IMAGE_HEIGHT=480
   fi
-fi 
+fi
+
+######################### Calculate the output frequncy in Hz ###############
+
+# Round down to 1 kHz resolution.  Answer is always integer numeric
+
+FREQ_OUTPUTKHZ=`echo - | awk '{print sprintf("%d", '$FREQ_OUTPUT' * 1000)}'`
+FREQ_OUTPUTHZ="$FREQ_OUTPUTKHZ"000
 
 ######################### Pre-processing for each Output Mode ###############
 
@@ -324,9 +331,6 @@ case "$MODE_OUTPUT" in
     if [ "$BAND_GPIO" -gt "15" ]; then
       let BAND_GPIO=$BAND_GPIO-16
     fi
-
-    # CALCULATE FREQUENCY in Hz
-    FREQ_OUTPUTHZ=`echo - | awk '{print '$FREQ_OUTPUT' * 1000000}'`
 
     LIME_GAIN=$(get_config_var limegain $PCONFIGFILE)
     $PATHSCRIPT"/ctlfilter.sh"
