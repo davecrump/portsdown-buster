@@ -1,3 +1,6 @@
+202108230
+Allow system update release info change
+
 202107020
 Correct DVB-T Frequency Calculation
 
