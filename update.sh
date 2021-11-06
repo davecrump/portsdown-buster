@@ -136,6 +136,9 @@ cp -f -r "$PATHSCRIPT"/longmynd_config.txt "$PATHUBACKUP"/longmynd_config.txt
 # Make a safe copy of the Lime Calibration frequency or status
 cp -f -r "$PATHSCRIPT"/limecalfreq.txt "$PATHUBACKUP"/limecalfreq.txt
 
+# Make a safe copy of the Band Viewer config
+cp -f -r /home/pi/rpidatv/src/bandview/bandview_config.txt "$PATHUBACKUP"/bandview_config.txt
+
 # Make a safe copy of the Contest Codes
 cp -f -r "$PATHSCRIPT"/portsdown_C_codes.txt "$PATHUBACKUP"/portsdown_C_codes.txt
 
@@ -415,6 +418,29 @@ echo "---------------------------------"
 cd /home/pi/rpidatv/src/bandview
 make
 cp bandview ../../bin/
+# Copy the fftw wisdom file to home so that there is no start-up delay
+# This file works for both BandViewer and NF Meter
+cp .fftwf_wisdom /home/pi/.fftwf_wisdom
+cd /home/pi
+
+# Compile Power Meter
+echo
+echo "---------------------------------"
+echo "----- Compiling Power Meter -----"
+echo "---------------------------------"
+cd /home/pi/rpidatv/src/power_meter
+make
+cp power_meter ../../bin/
+cd /home/pi
+
+# Compile NF Meter
+echo
+echo "----------------------------------------"
+echo "----- Compiling Noise Figure Meter -----"
+echo "----------------------------------------"
+cd /home/pi/rpidatv/src/nf_meter
+make
+cp nf_meter ../../bin/
 cd /home/pi
 
 # Check if raspi2png needs to be installed (202004300)
@@ -482,6 +508,9 @@ fi
 
 # Restore the user's original Lime Calibration frequency or status
 cp -f -r "$PATHUBACKUP"/limecalfreq.txt "$PATHSCRIPT"/limecalfreq.txt
+
+# Restore the user's original Band Viewer config (but not yet as it keeps changing)
+# cp -f -r "$PATHUBACKUP"/bandview_config.txt /home/pi/rpidatv/src/bandview/bandview_config.txt
 
 # Restore the user's original Contest Codes
 cp -f -r "$PATHUBACKUP"/portsdown_C_codes.txt "$PATHSCRIPT"/portsdown_C_codes.txt 

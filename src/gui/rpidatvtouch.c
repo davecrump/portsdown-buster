@@ -15455,9 +15455,41 @@ void waituntil(int w,int h)
           UpdateWindow();
           usleep(500000);
           break;
-        case 10:                                       // Video Snap
+        case 5:                                       // Video Snap
           do_snap();
           UpdateWindow();
+          break;
+        case 10:                                      // Sig Gen
+          DisplayLogo();
+          cleanexit(130);
+          break;
+        case 11:                                                 // BandViewer
+          if((CheckLimeMiniConnect() == 0) || (CheckLimeUSBConnect() == 0))
+          {
+            DisplayLogo();
+            cleanexit(136);
+          }
+          else
+          {
+            MsgBox("No LimeSDR Connected");
+            wait_touch();
+          }
+          break;
+        case 12:                                                 // Power Meter
+          DisplayLogo();
+          cleanexit(137);
+          break;
+        case 13:                                                 // NF Meter
+          if((CheckLimeMiniConnect() == 0) || (CheckLimeUSBConnect() == 0))
+          {
+            DisplayLogo();
+            cleanexit(138);
+          }
+          else
+          {
+            MsgBox("No LimeSDR Connected");
+            wait_touch();
+          }
           break;
         case 22:                              // Menu 1
           printf("MENU 1 \n");
@@ -17985,8 +18017,7 @@ void Define_Menu2()
   AddButtonStatus(button, "Snap^Check", &Blue);
 
   button = CreateButton(2, 8);
-  AddButtonStatus(button, "More^Functions", &Blue);
-
+  AddButtonStatus(button, "Test^Equipment", &Blue);
 
   button = CreateButton(2, 9);
   AddButtonStatus(button, "Stream^Viewer", &Blue);
@@ -18666,7 +18697,7 @@ void Define_Menu7()
 {
   int button;
 
-  strcpy(MenuTitle[7], "Menu 7 Extra Utilities");
+  strcpy(MenuTitle[7], "Menu 7 Test Equipment");
 
   // Bottom Line Menu 7: User Buttons
 
@@ -18690,13 +18721,25 @@ void Define_Menu7()
   AddButtonStatus(button, "Button 5", &Blue);
   AddButtonStatus(button, "Button 5", &Green);
 
-  // 2nd line up Menu 7:  
+  // 2nd line up Menu 7: 
+
+  button = CreateButton(7, 5);
+  AddButtonStatus(button, "Video^Snap", &Blue);
+  AddButtonStatus(button, " ", &Green);
 
   // 3rd line up Menu 7: 
 
   button = CreateButton(7, 10);
-  AddButtonStatus(button, "Video^Snap", &Blue);
-  AddButtonStatus(button, " ", &Green);
+  AddButtonStatus(button, "Signal^Generator", &Blue);
+
+  button = CreateButton(7, 11);
+  AddButtonStatus(button, "Band^Viewer", &Blue);
+
+  button = CreateButton(7, 12);
+  AddButtonStatus(button, "Power^Meter", &Blue);
+
+  button = CreateButton(7, 13);
+  AddButtonStatus(button, "NF^Meter", &Blue);
 
   // 4th line up Menu 7: 
 
