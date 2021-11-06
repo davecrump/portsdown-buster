@@ -43,8 +43,10 @@ EOF
 # 131  Exit from rpidatvgui requesting start of spectrum monitor
 # 132  Run Update Script for production load
 # 133  Run Update Script for development load
-# 134  Run XY Display NOT USED
+# 134  Exit from rpidatvgui requesting start of the XY Display
 # 136  Exit from rpidatvgui requesting start of BandViewer
+# 137  Exit from rpidatvgui requesting start of Power Meter
+# 138  Exit from rpidatvgui requesting start of NF Meter
 # 160  Shutdown from GUI
 # 192  Reboot from GUI
 # 193  Rotate 7 inch and reboot
@@ -102,7 +104,8 @@ while [ "$GUI_RETURN_CODE" -gt 127 ] || [ "$GUI_RETURN_CODE" -eq 0 ];  do
       /home/pi/update.sh -d
     ;;
     134)
-      GUI_RETURN_CODE="129"
+      /home/pi/rpidatv/bin/xy
+      GUI_RETURN_CODE="$?"
     ;;
     136)
       sleep 1                        # Wait for Lime to be released
@@ -110,6 +113,14 @@ while [ "$GUI_RETURN_CODE" -gt 127 ] || [ "$GUI_RETURN_CODE" -eq 0 ];  do
       /home/pi/rpidatv/bin/bandview >/dev/null 2>/dev/null
       GUI_RETURN_CODE="$?"
       BANDVIEW_START_DELAY=0
+    ;;
+    137)
+      /home/pi/rpidatv/bin/power_meter
+      GUI_RETURN_CODE="$?"
+    ;;
+    138)
+      /home/pi/rpidatv/bin/nf_meter
+      GUI_RETURN_CODE="$?"
     ;;
     160)
       sleep 1

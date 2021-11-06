@@ -88,7 +88,7 @@ sudo fbi -T 1 -noverbose -a /home/pi/rpidatv/scripts/images/BATC_Black.png >/dev
 # Read in URL argument
 STREAMURL=$1
 
-stdbuf -oL omxplayer --timeout 2 --vol 600 --adev alsa:plughw:"$AUDIO_OUT_DEV",0 --layer 6 $STREAMURL 2>/dev/null | {
+stdbuf -oL omxplayer --timeout 2 --vol 600 --adev alsa:plughw:"$AUDIO_OUT_DEV",0 --aspect-mode stretch --layer 6 $STREAMURL 2>/dev/null | {
 LINE="1"
 rm  /home/pi/tmp/stream_status.txt >/dev/null 2>/dev/null
 while IFS= read -r line
