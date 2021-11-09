@@ -1,6 +1,7 @@
 202111100
-Test Equipment Menu
+Add Test Equipment Menu
 Stretch Stream Viewer to screen edges
+Allow 16:9 (512x288) streaming from Easycap
 Use latest Buster for new builds
 
 202108230
