@@ -119,6 +119,7 @@ while [ "$GUI_RETURN_CODE" -gt 127 ] || [ "$GUI_RETURN_CODE" -eq 0 ];  do
       GUI_RETURN_CODE="$?"
     ;;
     138)
+      sleep 1                        # Wait for Lime to be released
       /home/pi/rpidatv/bin/nf_meter
       GUI_RETURN_CODE="$?"
     ;;
