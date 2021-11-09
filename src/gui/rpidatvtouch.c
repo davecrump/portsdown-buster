@@ -15464,32 +15464,62 @@ void waituntil(int w,int h)
           cleanexit(130);
           break;
         case 11:                                                 // BandViewer
-          if((CheckLimeMiniConnect() == 0) || (CheckLimeUSBConnect() == 0))
+          if (strcmp(DisplayType, "Element14_7") == 0) // 7 inch screen
           {
-            DisplayLogo();
-            cleanexit(136);
+            if((CheckLimeMiniConnect() == 0) || (CheckLimeUSBConnect() == 0))
+            {
+              DisplayLogo();
+              cleanexit(136);
+            }
+            else
+            {
+              MsgBox("No LimeSDR Connected");
+              wait_touch();
+            }
           }
           else
           {
-            MsgBox("No LimeSDR Connected");
+            MsgBox("7 Inch Screen Required");
             wait_touch();
           }
+          BackgroundRGB(0, 0, 0, 255);
+          UpdateWindow();
           break;
         case 12:                                                 // Power Meter
-          DisplayLogo();
-          cleanexit(137);
-          break;
-        case 13:                                                 // NF Meter
-          if((CheckLimeMiniConnect() == 0) || (CheckLimeUSBConnect() == 0))
+          if (strcmp(DisplayType, "Element14_7") == 0) // 7 inch screen
           {
             DisplayLogo();
-            cleanexit(138);
+            cleanexit(137);
           }
           else
           {
-            MsgBox("No LimeSDR Connected");
+            MsgBox("7 Inch Screen Required");
             wait_touch();
           }
+          BackgroundRGB(0, 0, 0, 255);
+          UpdateWindow();
+          break;
+        case 13:                                                 // NF Meter
+          if (strcmp(DisplayType, "Element14_7") == 0) // 7 inch screen
+          {
+            if((CheckLimeMiniConnect() == 0) || (CheckLimeUSBConnect() == 0))
+            {
+              DisplayLogo();
+              cleanexit(138);
+            }
+            else
+            {
+              MsgBox("No LimeSDR Connected");
+              wait_touch();
+            }
+          }
+          else
+          {
+            MsgBox("7 Inch Screen Required");
+            wait_touch();
+          }
+          BackgroundRGB(0, 0, 0, 255);
+          UpdateWindow();
           break;
         case 22:                              // Menu 1
           printf("MENU 1 \n");

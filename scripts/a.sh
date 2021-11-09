@@ -1509,6 +1509,11 @@ fi
           VIDEO_WIDTH=720
           VIDEO_HEIGHT=576
         fi
+        if [ "$FORMAT" == "16:9" ]; then
+          SCALE="scale=512:288,"
+        else
+          SCALE=""
+        fi
         if [ "$AUDIO_CARD" == "0" ]; then
           # No audio
           $PATHRPI"/ffmpeg" -loglevel $MODE_DEBUG -thread_queue_size 2048\
