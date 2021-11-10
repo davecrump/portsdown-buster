@@ -1,8 +1,9 @@
-202111100
+202111101
 Add Test Equipment Menu
 Stretch Stream Viewer to screen edges
 Allow 16:9 (512x288) streaming from Easycap
 Use latest Buster for new builds
+Add LimeSDR USB DVB-T capability
 
 202108230
 Allow system update release info change
