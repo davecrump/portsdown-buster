@@ -15521,6 +15521,20 @@ void waituntil(int w,int h)
           BackgroundRGB(0, 0, 0, 255);
           UpdateWindow();
           break;
+        case 14:                                                 // XY
+          if (strcmp(DisplayType, "Element14_7") == 0) // 7 inch screen
+          {
+            DisplayLogo();
+            cleanexit(134);
+          }
+          else
+          {
+            MsgBox("7 Inch Screen Required");
+            wait_touch();
+          }
+          BackgroundRGB(0, 0, 0, 255);
+          UpdateWindow();
+          break;
         case 22:                              // Menu 1
           printf("MENU 1 \n");
           CurrentMenu=1;
@@ -18770,6 +18784,9 @@ void Define_Menu7()
 
   button = CreateButton(7, 13);
   AddButtonStatus(button, "NF^Meter", &Blue);
+
+  button = CreateButton(7, 14);
+  AddButtonStatus(button, "XY^Display", &Blue);
 
   // 4th line up Menu 7: 
 
