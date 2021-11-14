@@ -1,5 +1,6 @@
 202111101
 Add Test Equipment Menu
+LimeSDR USB Versions of Band Viewer and NF Meter
 Stretch Stream Viewer to screen edges
 Allow 16:9 (512x288) streaming from Easycap
 Use latest Buster for new builds
