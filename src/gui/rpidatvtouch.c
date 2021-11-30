@@ -14738,7 +14738,7 @@ void waituntil(int w,int h)
           do_snapcheck();
           UpdateWindow();
           break;
-        case 8:                               // More Functions Menu
+        case 8:                               // Test Equipment Menu
           printf("MENU 7 \n");
           CurrentMenu = 7;
           BackgroundRGB(0, 0, 0, 255);
@@ -15456,7 +15456,29 @@ void waituntil(int w,int h)
           UpdateWindow();
           usleep(500000);
           break;
-        case 5:                                       // Video Snap
+        case 5:                                                 // Sweeper
+          if (strcmp(DisplayType, "Element14_7") == 0) // 7 inch screen
+          {
+            if((CheckLimeMiniConnect() == 0) || (CheckLimeUSBConnect() == 0))
+            {
+              DisplayLogo();
+              cleanexit(139);
+            }
+            else
+            {
+              MsgBox("No LimeSDR Connected");
+              wait_touch();
+            }
+          }
+          else
+          {
+            MsgBox("7 Inch Screen Required");
+            wait_touch();
+          }
+          BackgroundRGB(0, 0, 0, 255);
+          UpdateWindow();
+          break;
+        case 9:                                       // Video Snap
           do_snap();
           UpdateWindow();
           break;
@@ -18769,6 +18791,10 @@ void Define_Menu7()
   // 2nd line up Menu 7: 
 
   button = CreateButton(7, 5);
+  AddButtonStatus(button, "Frequency^Sweeper", &Blue);
+  AddButtonStatus(button, " ", &Green);
+
+  button = CreateButton(7, 9);
   AddButtonStatus(button, "Video^Snap", &Blue);
   AddButtonStatus(button, " ", &Green);
 
