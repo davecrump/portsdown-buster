@@ -1,3 +1,6 @@
+202112010
+Add Frequency Sweeper
+
 202111101
 Add Test Equipment Menu
 LimeSDR USB Versions of Band Viewer and NF Meter
