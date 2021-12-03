@@ -1535,7 +1535,20 @@ fi
           VIDEO_HEIGHT=576
         fi
         if [ "$FORMAT" == "16:9" ]; then
-          SCALE="scale=512:288,"
+          #SCALE="scale=512:288,"
+          if [ $C920Present == 1 ] || [ $C910Present == 1 ]; then
+            v4l2-ctl --device="$VID_USB" --set-fmt-video=width=800,height=448,pixelformat=0 \
+              --set-ctrl power_line_frequency=1
+          fi
+          VIDEO_WIDTH=800
+          VIDEO_HEIGHT=448
+        elif [ "$FORMAT" == "720p" ] || [ "$FORMAT" == "1080p" ]; then
+          if [ $C920Present == 1 ] || [ $C910Present == 1 ]; then
+            v4l2-ctl --device="$VID_USB" --set-fmt-video=width=1024,height=576,pixelformat=0 \
+              --set-ctrl power_line_frequency=1
+          fi
+          VIDEO_WIDTH=1024
+          VIDEO_HEIGHT=576
         else
           SCALE=""
         fi

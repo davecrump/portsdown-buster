@@ -1701,7 +1701,7 @@ void ReadModeInput(char coding[256], char vsource[256])
     strcpy(coding, "H264");
     strcpy(vsource, "Webcam");
     strcpy(CurrentEncoding, "H264");
-    strcpy(CurrentFormat, "4:3");
+    //strcpy(CurrentFormat, "4:3");                         // Alow webcam 16:9 streaming
     strcpy(CurrentSource, TabSource[6]); // Webcam
   }
   else if (strcmp(ModeInput, "CARDH264") == 0)
@@ -5752,7 +5752,11 @@ void ApplyTXConfig()
       strcpy(ModeInput, "JCARD");
     }
   }
-  else
+  //else if (strcmp(CurrentModeOP, "STREAMER") == 0)
+  //{
+  //  printf("Streamer Selected - allowing all output modes\n");
+  //}
+  else  // Everything except Carrier and Jetson
   {
     if (strcmp(CurrentEncoding, "IPTS in") == 0)
     {
@@ -5762,9 +5766,9 @@ void ApplyTXConfig()
     {
       strcpy(ModeInput, "FILETS");
     }
-    else if (strcmp(CurrentEncoding, "H264") == 0)
+    else if (strcmp(CurrentEncoding, "H264") == 0)           // All H264 modes
     {
-      if (strcmp(CurrentFormat, "1080p") == 0)
+      if (strcmp(CurrentFormat, "1080p") == 0)               // Only allow 1080p for C920 direct
       {
         if (CheckC920() == 1)
         {
@@ -5772,13 +5776,13 @@ void ApplyTXConfig()
           {
             strcpy(ModeInput, "C920FHDH264");
           }
-          else
+          else                                                // if not C920 direct, go to 720p
           {
             strcpy(CurrentFormat, "720p");
           }
         }
       }
-      if (strcmp(CurrentFormat, "720p") == 0)
+      if (strcmp(CurrentFormat, "720p") == 0)                 // Allow 720p for C920 direct
       {
         if (CheckC920() == 1)
         {
@@ -5803,6 +5807,11 @@ void ApplyTXConfig()
             strcpy(ModeInput, "C920HDH264");
             wait_touch();
           }
+          else if (strcmp(CurrentSource, "Webcam") == 0)
+          {
+            strcpy(ModeInput, "WEBCAMH264");
+        }
+
           //else if (strcmp(CurrentSource, "CompVid") == 0)
           //{
           //  strcpy(CurrentFormat, "16:9");
@@ -5811,6 +5820,10 @@ void ApplyTXConfig()
           //{
           //  strcpy(CurrentFormat, "4:3");
           //}
+        }
+        if (strcmp(CurrentSource, "Webcam") == 0)  // Allow for 16:9 streaming
+        {
+          strcpy(ModeInput, "WEBCAMH264");
         }
       }
       if (strcmp(CurrentFormat, "4:3") == 0)
@@ -5853,168 +5866,168 @@ void ApplyTXConfig()
         }
       }
     }
-    else  // MPEG-2.  Check for C920 first
+    else  // MPEG-2.  Check for C920 direct first
     {
-    if ((strcmp(CurrentSource, "C920") == 0) && (CheckC920() == 1))
-    {
-      if (strcmp(CurrentFormat, "1080p") == 0)
+      if ((strcmp(CurrentSource, "C920") == 0) && (CheckC920() == 1))
       {
-        strcpy(ModeInput, "C920FHDH264");
-      }
-      else if (strcmp(CurrentFormat, "720p") == 0)
-      {
-        strcpy(ModeInput, "C920HDH264");
-      }
-      else
-      {
-          strcpy(ModeInput, "C920H264");
-      }
-    }
-    else  // Not C920
-    {
-      if (strcmp(CurrentFormat, "1080p") == 0)
-      {
-        MsgBox2("1080p encoding not available with webcam"
-          , "Please select another mode");
-        wait_touch();
-      }
-      if (strcmp(CurrentFormat, "720p") == 0)
-      {
-        if (strcmp(CurrentSource, "Pi Cam") == 0)
+        if (strcmp(CurrentFormat, "1080p") == 0)
         {
-          strcpy(ModeInput, "CAMHDMPEG-2");
+          strcpy(ModeInput, "C920FHDH264");
         }
-        else if (strcmp(CurrentSource, "CompVid") == 0)
+        else if (strcmp(CurrentFormat, "720p") == 0)
         {
-          MsgBox2("720p not available with Comp Vid", "Selecting the test card");
+          strcpy(ModeInput, "C920HDH264");
+        }
+        else
+        {
+            strcpy(ModeInput, "C920H264");
+        }
+      }
+      else  // Not C920 direct, but may C920 as webcam
+      {
+        if (strcmp(CurrentFormat, "1080p") == 0)
+        {
+          MsgBox2("1080p encoding not available with webcam"
+            , "Please select another mode");
           wait_touch();
-          strcpy(ModeInput, "CARDHDMPEG-2");
         }
-        else if (strcmp(CurrentSource, "TCAnim") == 0)
+        if (strcmp(CurrentFormat, "720p") == 0)
         {
-          MsgBox2("720p not available with TCAnim", "Selecting the test card");
-          wait_touch();
-          strcpy(ModeInput, "CARDHDMPEG-2");
+          if (strcmp(CurrentSource, "Pi Cam") == 0)
+          {
+            strcpy(ModeInput, "CAMHDMPEG-2");
+          }
+          else if (strcmp(CurrentSource, "CompVid") == 0)
+          {
+            MsgBox2("720p not available with Comp Vid", "Selecting the test card");
+            wait_touch();
+            strcpy(ModeInput, "CARDHDMPEG-2");
+          }
+          else if (strcmp(CurrentSource, "TCAnim") == 0)
+          {
+            MsgBox2("720p not available with TCAnim", "Selecting the test card");
+            wait_touch();
+            strcpy(ModeInput, "CARDHDMPEG-2");
+          }
+          else if (strcmp(CurrentSource, "TestCard") == 0)
+          {
+            strcpy(ModeInput, "CARDHDMPEG-2");
+          }
+          else if (strcmp(CurrentSource, "PiScreen") == 0)
+          {
+            MsgBox2("720p not available with PiScreen", "Selecting the test card");
+            wait_touch();
+            strcpy(ModeInput, "CARDHDMPEG-2");
+          }
+          else if (strcmp(CurrentSource, "Contest") == 0)
+          {
+            MsgBox2("720p not available with Contest", "Selecting the test card");
+            wait_touch();
+            strcpy(ModeInput, "CARDHDMPEG-2");
+          }
+          else if (strcmp(CurrentSource, "Webcam") == 0)
+          {
+            strcpy(ModeInput, "WEBCAMHDMPEG-2");
+          }
+          else if (strcmp(CurrentSource, "C920") == 0)
+          {
+            strcpy(ModeInput, "WEBCAMHDMPEG-2");
+          }
+          else  // shouldn't happen
+          {
+            strcpy(ModeInput, "CARDHDMPEG-2");
+          }
         }
-        else if (strcmp(CurrentSource, "TestCard") == 0)
-        {
-          strcpy(ModeInput, "CARDHDMPEG-2");
-        }
-        else if (strcmp(CurrentSource, "PiScreen") == 0)
-        {
-          MsgBox2("720p not available with PiScreen", "Selecting the test card");
-          wait_touch();
-          strcpy(ModeInput, "CARDHDMPEG-2");
-        }
-        else if (strcmp(CurrentSource, "Contest") == 0)
-        {
-          MsgBox2("720p not available with Contest", "Selecting the test card");
-          wait_touch();
-          strcpy(ModeInput, "CARDHDMPEG-2");
-        }
-        else if (strcmp(CurrentSource, "Webcam") == 0)
-        {
-          strcpy(ModeInput, "WEBCAMHDMPEG-2");
-        }
-        else if (strcmp(CurrentSource, "C920") == 0)
-        {
-          strcpy(ModeInput, "WEBCAMHDMPEG-2");
-        }
-        else  // shouldn't happen
-        {
-          strcpy(ModeInput, "CARDHDMPEG-2");
-        }
-      }
 
-      if (strcmp(CurrentFormat, "16:9") == 0)
-      {
-        if (strcmp(CurrentSource, "Pi Cam") == 0)
+        if (strcmp(CurrentFormat, "16:9") == 0)
         {
-          strcpy(ModeInput, "CAM16MPEG-2");
+          if (strcmp(CurrentSource, "Pi Cam") == 0)
+          {
+            strcpy(ModeInput, "CAM16MPEG-2");
+          }
+          else if (strcmp(CurrentSource, "CompVid") == 0)
+          {
+            strcpy(ModeInput, "ANALOG16MPEG-2");
+          }
+          else if (strcmp(CurrentSource, "TCAnim") == 0)
+          {
+            MsgBox2("TCAnim not available with MPEG-2", "Selecting the test card");
+            wait_touch();
+            strcpy(ModeInput, "CARD16MPEG-2");
+          }
+          else if (strcmp(CurrentSource, "TestCard") == 0)
+          {
+            strcpy(ModeInput, "CARD16MPEG-2");
+          }
+          else if (strcmp(CurrentSource, "PiScreen") == 0)
+          {
+            MsgBox2("16:9 not available with PiScreen", "Selecting the test card");
+            wait_touch();
+            strcpy(ModeInput, "CARD16MPEG-2");
+          }
+          else if (strcmp(CurrentSource, "Contest") == 0)
+          {
+            MsgBox2("16:9 not available with Contest", "Selecting 4:3");
+            wait_touch();
+            strcpy(ModeInput, "CONTESTMPEG-2");
+          }
+          else if (strcmp(CurrentSource, "Webcam") == 0)
+          {
+            strcpy(ModeInput, "WEBCAM16MPEG-2");
+          }
+          else if (strcmp(CurrentSource, "C920") == 0)
+          {
+            strcpy(ModeInput, "WEBCAM16MPEG-2");
+          }
+          else  // shouldn't happen
+          {
+            strcpy(ModeInput, "CARD16MPEG-2");
+          }
         }
-        else if (strcmp(CurrentSource, "CompVid") == 0)
-        {
-          strcpy(ModeInput, "ANALOG16MPEG-2");
-        }
-        else if (strcmp(CurrentSource, "TCAnim") == 0)
-        {
-          MsgBox2("TCAnim not available with MPEG-2", "Selecting the test card");
-          wait_touch();
-          strcpy(ModeInput, "CARD16MPEG-2");
-        }
-        else if (strcmp(CurrentSource, "TestCard") == 0)
-        {
-          strcpy(ModeInput, "CARD16MPEG-2");
-        }
-        else if (strcmp(CurrentSource, "PiScreen") == 0)
-        {
-          MsgBox2("16:9 not available with PiScreen", "Selecting the test card");
-          wait_touch();
-          strcpy(ModeInput, "CARD16MPEG-2");
-        }
-        else if (strcmp(CurrentSource, "Contest") == 0)
-        {
-          MsgBox2("16:9 not available with Contest", "Selecting 4:3");
-          wait_touch();
-          strcpy(ModeInput, "CONTESTMPEG-2");
-        }
-        else if (strcmp(CurrentSource, "Webcam") == 0)
-        {
-          strcpy(ModeInput, "WEBCAM16MPEG-2");
-        }
-        else if (strcmp(CurrentSource, "C920") == 0)
-        {
-          strcpy(ModeInput, "WEBCAM16MPEG-2");
-        }
-        else  // shouldn't happen
-        {
-          strcpy(ModeInput, "CARD16MPEG-2");
-        }
-      }
 
-      if (strcmp(CurrentFormat, "4:3") == 0)
-      {
-        if (strcmp(CurrentSource, "Pi Cam") == 0)
+        if (strcmp(CurrentFormat, "4:3") == 0)
         {
-          strcpy(ModeInput, "CAMMPEG-2");
-        }
-        else if (strcmp(CurrentSource, "CompVid") == 0)
-        {
-          strcpy(ModeInput, "ANALOGMPEG-2");
-        }
-        else if (strcmp(CurrentSource, "TCAnim") == 0)
-        {
-          strcpy(ModeInput, "CARDMPEG-2");
-          MsgBox2("TCAnim not available with MPEG-2", "Selecting Test Card F instead");
-          wait_touch();
-        }
-        else if (strcmp(CurrentSource, "TestCard") == 0)
-        {
-          strcpy(ModeInput, "CARDMPEG-2");
-        }
-        else if (strcmp(CurrentSource, "PiScreen") == 0)
-        {
-          strcpy(ModeInput, "CARDMPEG-2");
-          MsgBox2("PiScreen not available with MPEG-2", "Selecting Test Card F instead");
-          wait_touch();
-        }
-        else if (strcmp(CurrentSource, "Contest") == 0)
-        {
-          strcpy(ModeInput, "CONTESTMPEG-2");
-        }
-        else if (strcmp(CurrentSource, "Webcam") == 0)
-        {
+          if (strcmp(CurrentSource, "Pi Cam") == 0)
+          {
+            strcpy(ModeInput, "CAMMPEG-2");
+          }
+          else if (strcmp(CurrentSource, "CompVid") == 0)
+          {
+            strcpy(ModeInput, "ANALOGMPEG-2");
+          }
+          else if (strcmp(CurrentSource, "TCAnim") == 0)
+          {
+            strcpy(ModeInput, "CARDMPEG-2");
+            MsgBox2("TCAnim not available with MPEG-2", "Selecting Test Card F instead");
+            wait_touch();
+          }
+          else if (strcmp(CurrentSource, "TestCard") == 0)
+          {
+            strcpy(ModeInput, "CARDMPEG-2");
+          }
+          else if (strcmp(CurrentSource, "PiScreen") == 0)
+          {
+            strcpy(ModeInput, "CARDMPEG-2");
+            MsgBox2("PiScreen not available with MPEG-2", "Selecting Test Card F instead");
+            wait_touch();
+          }
+          else if (strcmp(CurrentSource, "Contest") == 0)
+          {
+            strcpy(ModeInput, "CONTESTMPEG-2");
+          }
+          else if (strcmp(CurrentSource, "Webcam") == 0)
+          {
           strcpy(ModeInput, "WEBCAMMPEG-2");
+          }
+          else if (strcmp(CurrentSource, "C920") == 0)
+          {
+            strcpy(ModeInput, "WEBCAMMPEG-2");
+          }
+          else  // Shouldn't happen but give them Test Card F
+          {
+            strcpy(ModeInput, "CARDMPEG-2");
+          }
         }
-        else if (strcmp(CurrentSource, "C920") == 0)
-        {
-          strcpy(ModeInput, "WEBCAMMPEG-2");
-        }
-        else  // Shouldn't happen but give them Test Card F
-        {
-          strcpy(ModeInput, "CARDMPEG-2");
-        }
-      }
       }
     }
   }
