@@ -199,7 +199,7 @@ echo "--------------------------------------------"
 
 # For libmpegts
 cd /home/pi/avc2ts
-git clone git://github.com/F5OEO/libmpegts
+git clone https://github.com/F5OEO/libmpegts
 cd libmpegts
 ./configure
 make
