@@ -1,3 +1,6 @@
+202201150
+Update install script to clone with https:// not git://
+
 202112010
 Add Frequency Sweeper
 Add 16:9 Streaming from C920 Webcam
