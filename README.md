@@ -1,21 +1,22 @@
 ![portsdown banner](/doc/img/Buster_Header_Image.JPG)
 # Portsdown 2020 Build
 
-**The Portsdown 2020** is a DVB-S and DVB-S2 digital television transmitter for the Raspberry Pi 3B and 3B+.  Although named 2020, this software continues to be updated in 2021.  The core of the transmitter was written by Evariste Courjaud F5OEO and is maintained by him.  This BATC Version, known as the Portsdown Transmitter, has been developed by a team of BATC members for use with a LimeSDR Mini, a DATV Express PCB or an external synthesized oscillator and modulator/filter board to produce a signal suitable for driving a high power amateur television transmitter on the amateur bands.  The intention is that the design should be reproducible by someone who has never used Linux before.  Detailed instructions on loading the software are listed below, and further details of the complete transmitter design and build are on the BATC Wiki at https://wiki.batc.org.uk/The_Portsdown_Transmitter.  There is a Forum for discussion of the project here: https://forum.batc.org.uk/viewforum.php?f=103
+**The Portsdown 2020** is a DVB-S and DVB-S2 digital television transmitter and receiver for the Raspberry Pi 3B and 3B+.  Although named 2020, this software continues to be updated in 2022 and is sometimes referrred to as the Portsdown 3.  The core of the transmitter was written by Evariste Courjaud F5OEO and is maintained by him.  This BATC Version, known as the Portsdown Transmitter, has been developed by a team of BATC members for use with a LimeSDR Mini, a DATV Express PCB or an external synthesized oscillator and modulator/filter board to produce a signal suitable for driving a high power amateur television transmitter on the amateur bands.  The intention is that the design should be reproducible by someone who has never used Linux before.  Detailed instructions on loading the software are listed below, and further details of the complete transmitter design and build are on the BATC Wiki at https://wiki.batc.org.uk/The_Portsdown_Transmitter.  There is a Forum for discussion of the project here: https://forum.batc.org.uk/viewforum.php?f=103
 
-The Portsdown software can be used with a LimeSDR (Mini or USB) or a DATV Express or the bespoke filter-modulator board.
+The Portsdown software can be used with a LimeSDR (Mini or USB), a DATV Express or the bespoke filter-modulator board.
 
 This version is based on Raspios Buster and is compatible with the Raspberry Pi 3B and 3B+.  A separate build, the Portsdown 4, is required if you are using a Raspberry Pi 4.  The older Jessie (2018) and Stretch (2019) Portsdown versions are no longer supported.
 
 Our thanks to Evariste and all the other contributors to this community project.  All code within the project is GPL.
 
-# Installation for BATC Portsdown 2020 Buster Version
+# Installation for BATC Portsdown 2020 Raspberry Pi 3 Version (Portsdown 3)
 
 The preferred installation method only needs a Windows PC connected to the same (internet-connected) network as your Raspberry Pi.  Do not connect a keyboard or HDMI display directly to your Raspberry Pi.
 
-- First download the 2021-05-07 release of Raspios Buster Lite on to your Windows PC from here https://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-2021-05-28/2021-05-07-raspios-buster-armhf-lite.zip
+- First download the 2022-04-04 release of Raspberry Pi OS Lite (Legacy) on to your Windows PC from here 
+https://downloads.raspberrypi.org/raspios_oldstable_lite_armhf/images/raspios_oldstable_lite_armhf-2022-04-07/2022-04-04-raspios-buster-armhf-lite.img.xz
 
-- Unzip the image and then transfer it to a Micro-SD Card using Win32diskimager https://sourceforge.net/projects/win32diskimager/
+- Unzip the image (using 7zip as it is a .xz compressed file) and then transfer it to a Micro-SD Card using Win32diskimager https://sourceforge.net/projects/win32diskimager/
 
 - Before you remove the card from your Windows PC, look at the card with windows explorer; the volume should be labeled "boot".  Create a new empty file called ssh in the top-level (root) directory by right-clicking, selecting New, Text Document, and then change the name to ssh (not ssh.txt).  You should get a window warning about changing the filename extension.  Click OK.  If you do not get this warning, you have created a file called ssh.txt and you need to rename it ssh.  IMPORTANT NOTE: by default, Windows (all versions) hides the .txt extension on the ssh file.  To change this, in Windows Explorer, select File, Options, click the View tab, and then untick "Hide extensions for known file types". Then click OK.
 
