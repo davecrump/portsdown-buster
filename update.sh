@@ -207,7 +207,7 @@ fi
 
 # --------- Install new packages as Required ---------
 
-sudo apt-get -y install mplayer vlc # 202004300 Used for video monitor and LongMynd
+sudo apt-get -y install mplayer # 202004300 Used for video monitor and LongMynd
 
 # Install libiio and dependencies if required (used for DVB-T scripts)
 echo
