@@ -1,3 +1,6 @@
+202206270
+Roll back and hold VLC to version 3.0.12
+
 202206010
 Test User Buttons for Contest Roving Scripts
 
