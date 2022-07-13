@@ -1,3 +1,6 @@
+202207140
+Remove hold on VLC and update to latest version which works with Portsdown
+
 202206270
 Roll back and hold VLC to version 3.0.12
 
