@@ -1,3 +1,7 @@
+202207160
+Correct Receiver Preset Entry Menu
+Add warning for IQ mode after LongMynd RPi Jack Usage
+
 202207140
 Remove hold on VLC and update to latest version which works with Portsdown
 

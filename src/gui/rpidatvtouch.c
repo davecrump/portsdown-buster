@@ -53,7 +53,7 @@ Rewitten by Dave, G8GKQ
 #define KWHT  "\x1B[37m"
 #define KYEL  "\x1B[33m"
 
-#define PATH_CONFIG "/home/pi/rpidatv/scripts/rpidatvconfig.txt"
+// #define PATH_CONFIG "/home/pi/rpidatv/scripts/rpidatvconfig.txt"
 #define PATH_PCONFIG "/home/pi/rpidatv/scripts/portsdown_config.txt"
 #define PATH_PPRESETS "/home/pi/rpidatv/scripts/portsdown_presets.txt"
 #define PATH_TOUCHCAL "/home/pi/rpidatv/scripts/touchcal.txt"
@@ -387,6 +387,7 @@ int CheckLimeUSBConnect();
 void YesNo(int);
 static void cleanexit(int);
 int LimeGWRev();
+void CheckLMRXAudioOutput();
 void LMRX(int);
 void MakeFreqText(int);
 void LimeRFEInit();
@@ -9268,6 +9269,15 @@ void chopN(char *str, size_t n)
   }
 }
 
+
+void CheckLMRXAudioOutput()  // Set flag if LMRX uses RPi Jack
+{
+  if(strcmp(LMRXaudio, "rpi") == 0)
+  {
+    IQAvailable = 0;
+  }
+}
+
 void LMRX(int NoButton)
 {
   #define PATH_SCRIPT_LMRXMER "/home/pi/rpidatv/scripts/lmmer.sh 2>&1"
@@ -9347,6 +9357,7 @@ void LMRX(int NoButton)
     if(fp==NULL) printf("Process error\n");
 
     printf("STARTING VLC with FFMPEG RX\n");
+    CheckLMRXAudioOutput();
 
     /* Open status FIFO for read only  */
     ret = mkfifo("longmynd_status_fifo", 0666);
@@ -9813,6 +9824,7 @@ void LMRX(int NoButton)
     }
 
     printf("Listening\n");
+    CheckLMRXAudioOutput();
 
     WindowClear();
 
@@ -10196,6 +10208,7 @@ void LMRX(int NoButton)
     }
 
     printf("Listening\n");
+    CheckLMRXAudioOutput();
 
     WindowClear();
 
@@ -20717,7 +20730,7 @@ void Start_Highlights_Menu27()
       AmendButtonStatus(ButtonNumber(27, NoButton), 1, FreqBtext, &Green);
     }
   }
-  else if (CallingMenu == 13)  // LMRX Presets
+  else if (CallingMenu == 46)  // LMRX Presets (was 13)
   {
     for(index = 1; index < 10 ; index = index + 1)
     {
