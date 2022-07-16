@@ -1973,6 +1973,18 @@ esac
 case "$MODE_OUTPUT" in
 "JLIME")
   case "$ENCODING" in
+  "IPTS in")
+      # Write the assembled Jetson command to a temp file
+      /bin/cat <<EOM >$CMDFILE
+      (sshpass -p $JETSONPW ssh -o StrictHostKeyChecking=no $JETSONUSER@$JETSONIP 'bash -s' <<'ENDSSH' 
+      cd ~/dvbsdr/scripts
+      netcat -u -4 -l 10000 \
+      | ../bin/limesdr_dvb -s "$SYMBOLRATE_K"000 -f $FECNUM/$FECDEN -r $UPSAMPLE -m $MODTYPE -c $CONSTLN $PILOTS $FRAMES \
+        -t "$FREQ_OUTPUT"e6 -g $LIME_GAINF -q 1
+ENDSSH
+      ) &
+EOM
+  ;;
   "H265")
     case "$MODE_INPUT" in
     "JHDMI")
@@ -2030,6 +2042,37 @@ EOM
       /bin/cat <<EOM >$CMDFILE
       (sshpass -p $JETSONPW ssh -o StrictHostKeyChecking=no $JETSONUSER@$JETSONIP 'bash -s' <<'ENDSSH' 
       cd ~/dvbsdr/scripts
+
+      lsusb | grep -q "095d:3001"
+      if [ \$? == 0 ]; then
+        USBCAM_TYPE="EagleEye"
+      else
+        USBCAM_TYPE="C920"
+      fi
+
+      if [[ "\$USBCAM_TYPE" == "EagleEye" ]]; then
+
+      # PolyComm EagleEye Code.  Uses USB audio dongle
+      gst-launch-1.0 -vvv -e \
+        v4l2src device=/dev/video0 do-timestamp=true '!' 'image/jpeg,width=1280,height=720,framerate=25/1' \
+        '!' jpegparse '!'jpegdec '!' nvvidconv \
+        '!' "video/x-raw(memory:NVMM), width=(int)$VIDEO_WIDTH, height=(int)$VIDEO_HEIGHT, format=(string)I420" \
+        '!' omxh265enc control-rate=2 bitrate=$VIDEOBITRATE peak-bitrate=$VIDEOPEAKBITRATE preset-level=3 iframeinterval=100 \
+        '!' 'video/x-h265,width=(int)$VIDEO_WIDTH,height=(int)$VIDEO_HEIGHT,stream-format=(string)byte-stream' '!' queue \
+        '!' mux. alsasrc device=hw:2 \
+        '!' 'audio/x-raw, format=S16LE, layout=interleaved, rate=48000, channels=1' '!' voaacenc bitrate=20000 \
+        '!' queue '!' mux. mpegtsmux alignment=7 name=mux '!' fdsink \
+      | ffmpeg -i - -ss 8 \
+        -c:v copy -max_delay 200000 -muxrate $BITRATE_TS \
+        -c:a copy -f mpegts \
+        -metadata service_provider="$CHANNEL" -metadata service_name="$CALL" \
+        -mpegts_pmt_start_pid $PIDPMT -streamid 0:"$PIDVIDEO" -streamid 1:"$PIDAUDIO" - \
+      | ../bin/limesdr_dvb -s "$SYMBOLRATE_K"000 -f $FECNUM/$FECDEN -r $UPSAMPLE -m $MODTYPE -c $CONSTLN $PILOTS $FRAMES \
+        -t "$FREQ_OUTPUT"e6 -g $LIME_GAINF -q 1
+
+      else
+
+      # C920 code
       gst-launch-1.0 -vvv -e \
         v4l2src device=/dev/video0 do-timestamp=true '!' 'video/x-h264,width=1280,height=720,framerate=30/1' \
         '!' h264parse '!' omxh264dec '!' nvvidconv \
@@ -2047,6 +2090,9 @@ EOM
         -mpegts_pmt_start_pid $PIDPMT -streamid 0:"$PIDVIDEO" -streamid 1:"$PIDAUDIO" - \
       | ../bin/limesdr_dvb -s "$SYMBOLRATE_K"000 -f $FECNUM/$FECDEN -r $UPSAMPLE -m $MODTYPE -c $CONSTLN $PILOTS $FRAMES \
         -t "$FREQ_OUTPUT"e6 -g $LIME_GAINF -q 1
+
+      fi
+
 ENDSSH
       ) &
 EOM
