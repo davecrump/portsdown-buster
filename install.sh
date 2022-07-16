@@ -78,6 +78,8 @@ sudo apt-get -y install vlc  # Latest version works for Portsdown again as of 20
 sudo apt-get -y install libxml2 libxml2-dev bison flex libcdk5-dev                   # for libiio
 sudo apt-get -y install libaio-dev libserialport-dev libavahi-client-dev             # for libiio
 
+sudo apt-get -y install libairspy-dev                                   # For Airspy Bandviewer
+
 sudo pip install pyrtlsdr  #20180101 FreqShow
 
 # Install libiio for DVB-T scripts that refer to Pluto
@@ -473,6 +475,26 @@ cp bandview ../../bin/
 # Copy the fftw wisdom file to home so that there is no start-up delay
 # This file works for both BandViewer and NF Meter
 cp .fftwf_wisdom /home/pi/.fftwf_wisdom
+cd /home/pi
+
+# Compile Airspy Band Viewer
+echo
+echo "----------------------------------------"
+echo "----- Compiling Airspy Band Viewer -----"
+echo "----------------------------------------"
+cd /home/pi/rpidatv/src/airspyview
+make
+cp airspyview ../../bin/
+cd /home/pi
+
+# Compile RTL-SDR Band Viewer
+echo
+echo "----------------------------------------"
+echo "----- Compiling RTL-SDR Band Viewer -----"
+echo "----------------------------------------"
+cd /home/pi/rpidatv/src/rtlsdrview
+make
+cp rtlsdrview ../../bin/
 cd /home/pi
 
 # Compile Power Meter

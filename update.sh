@@ -139,6 +139,12 @@ cp -f -r "$PATHSCRIPT"/limecalfreq.txt "$PATHUBACKUP"/limecalfreq.txt
 # Make a safe copy of the Band Viewer config
 cp -f -r /home/pi/rpidatv/src/bandview/bandview_config.txt "$PATHUBACKUP"/bandview_config.txt
 
+# Make a safe copy of the Airspy Band Viewer config
+cp -f -r /home/pi/rpidatv/src/airspyview/airspyview_config.txt "$PATHUBACKUP"/airspyview_config.txt
+
+# Make a safe copy of the RTL-SDR Band Viewer config
+cp -f -r /home/pi/rpidatv/src/rtlsdrview/rtlsdrview_config.txt "$PATHUBACKUP"/rtlsdrview_config.txt
+
 # Make a safe copy of the Contest Codes
 cp -f -r "$PATHSCRIPT"/portsdown_C_codes.txt "$PATHUBACKUP"/portsdown_C_codes.txt
 
@@ -207,6 +213,9 @@ else
   echo "Found libiio installed"
   echo
 fi
+
+sudo apt-get -y install libairspy-dev                                   # For Airspy Bandviewer
+
 
 # ---------- Update rpidatv -----------
 
@@ -443,6 +452,26 @@ cp bandview ../../bin/
 cp .fftwf_wisdom /home/pi/.fftwf_wisdom
 cd /home/pi
 
+# Compile Airspy Band Viewer
+echo
+echo "----------------------------------------"
+echo "----- Compiling Airspy Band Viewer -----"
+echo "----------------------------------------"
+cd /home/pi/rpidatv/src/airspyview
+make
+cp airspyview ../../bin/
+cd /home/pi
+
+# Compile RTL-SDR Band Viewer
+echo
+echo "----------------------------------------"
+echo "----- Compiling RTL-SDR Band Viewer -----"
+echo "----------------------------------------"
+cd /home/pi/rpidatv/src/rtlsdrview
+make
+cp rtlsdrview ../../bin/
+cd /home/pi
+
 # Compile Power Meter
 echo
 echo "---------------------------------"
@@ -529,8 +558,14 @@ fi
 # Restore the user's original Lime Calibration frequency or status
 cp -f -r "$PATHUBACKUP"/limecalfreq.txt "$PATHSCRIPT"/limecalfreq.txt
 
-# Restore the user's original Band Viewer config (but not yet as it keeps changing)
-# cp -f -r "$PATHUBACKUP"/bandview_config.txt /home/pi/rpidatv/src/bandview/bandview_config.txt
+# Restore the user's original Band Viewer config
+cp -f -r "$PATHUBACKUP"/bandview_config.txt /home/pi/rpidatv/src/bandview/bandview_config.txt
+
+# Restore the user's original Airspy Band Viewer config
+cp -f -r "$PATHUBACKUP"/airspyview_config.txt /home/pi/rpidatv/src/airspyview/airspyview_config.txt
+
+# Restore the user's original RTL-SDR Band Viewer config
+cp -f -r "$PATHUBACKUP"/rtlsdrview_config.txt /home/pi/rpidatv/src/rtlsdrview/rtlsdrview_config.txt
 
 # Restore the user's original Contest Codes
 cp -f -r "$PATHUBACKUP"/portsdown_C_codes.txt "$PATHSCRIPT"/portsdown_C_codes.txt 

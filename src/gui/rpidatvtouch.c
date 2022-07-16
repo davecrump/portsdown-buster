@@ -4142,6 +4142,40 @@ int CheckfbcpRunning()
   return responseint;
 }
 
+
+/***************************************************************************//**
+ * @brief Checks whether an Airspy is connected
+ *
+ * @param 
+ *
+ * @return 0 if present, 1 if absent
+*******************************************************************************/
+
+int CheckAirspyConnect()
+{
+  FILE *fp;
+  char response[255];
+  int responseint;
+
+  /* Open the command for reading. */
+  fp = popen("lsusb | grep -q 'Airspy' ; echo $?", "r");
+  if (fp == NULL) {
+    printf("Failed to run command\n" );
+    exit(1);
+  }
+
+  /* Read the output a line at a time - output it. */
+  while (fgets(response, 7, fp) != NULL)
+  {
+    responseint = atoi(response);
+  }
+
+  /* close */
+  pclose(fp);
+  return responseint;
+}
+
+
 /***************************************************************************//**
  * @brief Checks whether a Lime Mini is connected
  *
@@ -14793,23 +14827,39 @@ void waituntil(int w,int h)
           BackgroundRGB(0, 0, 0, 255);
           UpdateWindow();                     
           break;
-        case 15:                              // Lime Band Viewer
-          if (((CheckLimeMiniConnect() == 0) || (CheckLimeUSBConnect() == 0)
-           || (DetectLimeNETMicro() == 1)) && (strcmp(DisplayType, "Element14_7") == 0))
+        case 15:                              // Band Viewer. Check for Airspy first, them LimeSDR then RTL-SDR
+          if (strcmp(DisplayType, "Element14_7") == 0)
           {
-            DisplayLogo();
-            cleanexit(136);
+            if (CheckAirspyConnect() == 0)
+            {
+              DisplayLogo();
+              cleanexit(140);
+            }
+            else 
+            { 
+              if((CheckLimeMiniConnect() == 0) || (CheckLimeUSBConnect() == 0) || (DetectLimeNETMicro() == 1))
+              {
+                DisplayLogo();
+                cleanexit(136);
+              }
+              else
+              {
+                if(CheckRTL() == 0)
+                {
+                  DisplayLogo();
+                  cleanexit(141);
+                }
+                else
+                {
+                  MsgBox("No LimeSDR, Airspy or RTL-SDR Connected");
+                  wait_touch();
+                }
+              }
+            }
           }
           else
           {
-            if (strcmp(DisplayType, "Element14_7") == 0)
-            {
-              MsgBox4("No LimeSDR or", "LimeNET Micro detected", " ", "Touch screen to continue");
-            }
-            else
-            {
-              MsgBox4("7 inch screen required", "For Band Viewer", " ", "Touch screen to continue");
-            }
+            MsgBox4("7 inch or", "other DSI screen required", "For Band Viewer", "Touch screen to continue");
             wait_touch();
           }
           BackgroundRGB(0, 0, 0, 255);
@@ -15512,23 +15562,39 @@ void waituntil(int w,int h)
           DisplayLogo();
           cleanexit(130);
           break;
-        case 11:                                                 // BandViewer
-          if (strcmp(DisplayType, "Element14_7") == 0) // 7 inch screen
+        case 11:                              // Band Viewer. Check for Airspy first, them LimeSDR then RTL-SDR
+          if (strcmp(DisplayType, "Element14_7") == 0)
           {
-            if((CheckLimeMiniConnect() == 0) || (CheckLimeUSBConnect() == 0))
+            if (CheckAirspyConnect() == 0)
             {
               DisplayLogo();
-              cleanexit(136);
+              cleanexit(140);
             }
-            else
-            {
-              MsgBox("No LimeSDR Connected");
-              wait_touch();
+            else 
+            { 
+              if((CheckLimeMiniConnect() == 0) || (CheckLimeUSBConnect() == 0) || (DetectLimeNETMicro() == 1))
+              {
+                DisplayLogo();
+                cleanexit(136);
+              }
+              else
+              {
+                if(CheckRTL() == 0)
+                {
+                  DisplayLogo();
+                  cleanexit(141);
+                }
+                else
+                {
+                  MsgBox("No LimeSDR, Airspy or RTL-SDR Connected");
+                  wait_touch();
+                }
+              }
             }
           }
           else
           {
-            MsgBox("7 Inch Screen Required");
+            MsgBox4("7 inch or", "other DSI screen required", "For Band Viewer", "Touch screen to continue");
             wait_touch();
           }
           BackgroundRGB(0, 0, 0, 255);
@@ -18137,7 +18203,7 @@ void Define_Menu2()
   // 4th line up Menu 2
 
   button = CreateButton(2, 15);
-  AddButtonStatus(button, "LimeSDR^BandView", &Blue);
+  AddButtonStatus(button, "Band^Viewer", &Blue);
 
   button = CreateButton(2, 16);
   AddButtonStatus(button, "Sig Gen^ ", &Blue);
