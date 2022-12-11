@@ -161,6 +161,15 @@ cp -f -r "$PATHSCRIPT"/TXstopextras.sh "$PATHUBACKUP"/TXstopextras.sh
 
 DisplayUpdateMsg "Step 4 of 10\nUpdating Software Packages\n\nXXXX------"
 
+# Download and install the VLC apt Preferences File 202212010
+cd /home/pi
+wget https://github.com/${GIT_SRC}/portsdown-buster/raw/master/scripts/configs/vlc
+sudo cp vlc /etc/apt/preferences.d/vlc
+
+sudo apt -y remove vlc*
+sudo apt -y remove libvlc*
+sudo apt -y remove vlc-data
+
 sudo dpkg --configure -a                         # Make sure that all the packages are properly configured
 sudo apt-get clean                               # Clean up the old archived packages
 sudo apt-get update --allow-releaseinfo-change   # Update the package list
@@ -193,7 +202,8 @@ sudo apt-get -y dist-upgrade # Upgrade all the installed packages to their lates
 
 # --------- Install new packages as Required ---------
 
-sudo apt-get -y install mplayer # 202004300 Used for video monitor and LongMynd
+sudo apt-get -y install vlc                       # Removed earlier
+sudo apt-get -y install mplayer                   # 202004300 Used for video monitor and LongMynd
 
 # Install libiio and dependencies if required (used for DVB-T scripts)
 echo

@@ -1,3 +1,7 @@
+202212110
+Pin VLC to use RPi archive version
+Update Buster Legacy Version for new builds
+
 202207170
 Add RTL-SDR and Airspy versions of Bandviewer
 
