@@ -36,6 +36,11 @@ else
   echo "-----------------------------------------------------------"
 fi
 
+# Download and install the VLC apt Preferences File 202212110
+cd /home/pi
+wget https://github.com/${GIT_SRC}/portsdown-buster/raw/master/scripts/configs/vlc
+sudo cp vlc /etc/apt/preferences.d/vlc
+
 # Update the package manager
 echo
 echo "------------------------------------"
