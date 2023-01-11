@@ -67,6 +67,8 @@ Rewitten by Dave, G8GKQ
 #define PATH_LIME_CAL "/home/pi/rpidatv/scripts/limecalfreq.txt"
 #define PATH_C_NUMBERS "/home/pi/rpidatv/scripts/portsdown_C_codes.txt"
 #define PATH_BV_CONFIG "/home/pi/rpidatv/src/bandview/bandview_config.txt"
+#define PATH_AS_CONFIG "/home/pi/rpidatv/src/airspyview/airspyview_config.txt"
+#define PATH_RS_CONFIG "/home/pi/rpidatv/src/rtlsdrview/rtlsdrview_config.txt"
 
 #define PI 3.14159265358979323846
 #define deg2rad(DEG) ((DEG)*((PI)/(180.0)))
@@ -14857,6 +14859,19 @@ void waituntil(int w,int h)
               }
             }
           }
+          else if (strcmp(DisplayType, "Waveshare") == 0)
+          {
+            if(CheckRTL() == 0)
+            {
+              DisplayLogo();
+              cleanexit(141);
+            }
+            else
+            {
+               MsgBox("RTL-SDR required for 3.5 inch screen");
+               wait_touch();
+            }
+          }
           else
           {
             MsgBox4("7 inch or", "other DSI screen required", "For Band Viewer", "Touch screen to continue");
@@ -15592,6 +15607,19 @@ void waituntil(int w,int h)
               }
             }
           }
+          else if (strcmp(DisplayType, "Waveshare") == 0)
+          {
+            if(CheckRTL() == 0)
+            {
+              DisplayLogo();
+              cleanexit(141);
+            }
+            else
+            {
+               MsgBox("RTL-SDR required for 3.5 inch screen");
+               wait_touch();
+            }
+          }
           else
           {
             MsgBox4("7 inch or", "other DSI screen required", "For Band Viewer", "Touch screen to continue");
@@ -15690,16 +15718,53 @@ void waituntil(int w,int h)
           }
           else                                           // Terrestrial, so set band viewer freq and exit to bandviewer
           {
-            if (((CheckLimeMiniConnect() == 0) || (CheckLimeUSBConnect() == 0)) && (strcmp(DisplayType, "Element14_7") == 0))
+            if (strcmp(DisplayType, "Element14_7") == 0)
             {
-              snprintf(ValueToSave, 63, "%d", LMRXfreq[0]);
-              SetConfigParam(PATH_BV_CONFIG, "centrefreq", ValueToSave);
-              DisplayLogo();
-              cleanexit(136);
+              if (((CheckLimeMiniConnect() == 0) || (CheckLimeUSBConnect() == 0)) || (DetectLimeNETMicro() == 1))
+              {
+                snprintf(ValueToSave, 63, "%d", LMRXfreq[0]);
+                SetConfigParam(PATH_BV_CONFIG, "centrefreq", ValueToSave);
+                DisplayLogo();
+                cleanexit(136);
+              }
+              else if (CheckAirspyConnect() == 0)
+              {
+                snprintf(ValueToSave, 63, "%d", LMRXfreq[0]);
+                SetConfigParam(PATH_AS_CONFIG, "centrefreq", ValueToSave);
+                DisplayLogo();
+                cleanexit(140);
+              }
+              else if(CheckRTL() == 0)
+              {
+                snprintf(ValueToSave, 63, "%d", LMRXfreq[0]);
+                SetConfigParam(PATH_RS_CONFIG, "centrefreq", ValueToSave);
+                DisplayLogo();
+                cleanexit(141);
+              }
+              else
+              {
+                MsgBox("No LimeSDR, Airspy or RTL-SDR Connected");
+                wait_touch();
+              }
+            }
+            else if (strcmp(DisplayType, "Waveshare") == 0)
+            {
+              if(CheckRTL() == 0)
+              {
+                snprintf(ValueToSave, 63, "%d", LMRXfreq[0]);
+                SetConfigParam(PATH_RS_CONFIG, "centrefreq", ValueToSave);
+                DisplayLogo();
+                cleanexit(141);
+              }
+              else
+              {
+                 MsgBox("RTL-SDR required for 3.5 inch screen");
+                 wait_touch();
+              }
             }
             else
             {
-              MsgBox2("LimeSDR and 7 inch screen", "required for BandViewer");
+              MsgBox4("7 inch or", "RTL-SDR required", "For Band Viewer", "Touch screen to continue");
               wait_touch();
             }
           }
@@ -19052,6 +19117,10 @@ void Start_Highlights_Menu8()
   {
     indexoffset = 10;
     if (((CheckLimeMiniConnect() == 0) || (CheckLimeUSBConnect() == 0)) && (strcmp(DisplayType, "Element14_7") == 0))
+    {
+      SetButtonStatus(ButtonNumber(CurrentMenu, 4), 2);
+    }
+    else if ((CheckRTL() == 0) && (strcmp(DisplayType, "Waveshare") == 0))
     {
       SetButtonStatus(ButtonNumber(CurrentMenu, 4), 2);
     }

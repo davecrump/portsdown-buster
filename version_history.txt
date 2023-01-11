@@ -1,3 +1,7 @@
+202301110
+Correct RTL-SDR Bandviewer Span width
+Allow basic RTL-SDR Bandviewer with Waveshare Screen 
+
 202212110
 Pin VLC to use RPi archive version
 Update Buster Legacy Version for new builds

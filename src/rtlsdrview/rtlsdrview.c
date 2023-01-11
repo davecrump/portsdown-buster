@@ -64,6 +64,7 @@ color_t DGrey = {.r = 32 , .g = 32 , .b = 32 };
 color_t Red   = {.r = 255, .g = 0  , .b = 0  };
 color_t Black = {.r = 0  , .g = 0  , .b = 0  };
 
+#define PATH_PCONFIG "/home/pi/rpidatv/scripts/portsdown_config.txt"
 #define PATH_CONFIG "/home/pi/rpidatv/src/rtlsdrview/rtlsdrview_config.txt"
 
 #define MAX_BUTTON 675
@@ -141,6 +142,8 @@ float ENR = 15.0;
 float Tsoff = 290.0;
 float Tson;
 
+bool webcontrol = false;   // Enables webcontrol on a Portsdown 4
+
 
 int tracecount = 0;  // Used for speed testing
 int exit_code;
@@ -152,6 +155,8 @@ int yshift    = 5;        // Vertical shift (pixels) for Y
 int xscalenum = 25;       // Numerator for X scaling fraction
 int xscaleden = 20;       // Denominator for X scaling fraction
 
+char DisplayType[31];
+
 ///////////////////////////////////////////// FUNCTION PROTOTYPES ///////////////////////////////
 
 void GetConfigParam(char *, char *, char *);
@@ -160,6 +165,7 @@ int CheckRTL();
 void ReadSavedParams();
 void do_snapcheck();
 int openTouchScreen(int);
+void UpdateWeb();
 void Keyboard(char *, char *, int);
 int getTouchScreenDetails(int*, int* ,int* ,int*);
 int ButtonNumber(int, int);
@@ -358,6 +364,38 @@ int CheckRTL()
 }
 
 
+/***************************************************************************//**
+ * @brief Checks to see if webcontrol exists in Portsdown Config file
+ *
+ * @param None
+ *
+ * @return 0 = Exists, so Portsdown 4
+ *         1 = Not
+*******************************************************************************/
+ 
+int CheckWebCtlExists()
+{
+  char shell_command[255];
+  FILE *fp;
+  int r;
+
+  sprintf(shell_command, "grep -q 'webcontrol' %s", PATH_PCONFIG);
+  fp = popen(shell_command, "r");
+  r = pclose(fp);
+
+  if (WEXITSTATUS(r) == 0)
+  {
+    printf("webcontrol detected\n");
+    return 0;
+  }
+  else
+  {
+    printf("webcontrol not detected\n");
+    return 1;
+  } 
+}
+
+
 void ReadSavedParams()
 {
   char response[63]="0";
@@ -395,6 +433,19 @@ void ReadSavedParams()
 
   strcpy(PlotTitle, "-");  // this is the "do not display" response
   GetConfigParam(PATH_CONFIG, "title", PlotTitle);
+
+  strcpy(response, "Element14_7");
+  GetConfigParam(PATH_PCONFIG, "display", response);
+  strcpy(DisplayType, response);
+
+  if (CheckWebCtlExists() == 0)  // Stops the GetConfig thowing an error on Portsdown 2020
+  {
+    GetConfigParam(PATH_PCONFIG, "webcontrol", response);
+    if (strcmp(response, "enabled") == 0)
+    {
+      webcontrol = true;
+    } 
+  }
 }
 
 
@@ -484,6 +535,17 @@ int IsImageToBeChanged(int x,int y)
   else
   {
     return 0;
+  }
+}
+
+
+void UpdateWeb()
+{
+  // Called after any screen update to update the web page if required.
+
+  if(webcontrol == true)
+  {
+    system("/home/pi/rpidatv/scripts/single_screen_grab_for_web.sh &");
   }
 }
 
@@ -1542,14 +1604,14 @@ void SetSpanWidth(int button)
   switch (button)
   {
     case 2:
-      span = 1000;
+      span = 500;
     break;
     case 3:
+      span = 1000;
+    break;
+    case 4:
       span = 2000;
     break;
-    //case 4:
-    //  span = 5000;
-    //break;
     //case 5:
     //  span = 10000;
     //break;
@@ -1876,6 +1938,11 @@ void CalcSpan()    // takes centre frequency and span and calulates startfreq an
 
   SpanWidth = 2048000;
 
+  if (span == 500)   // Sample rate is reduced to 1.024M
+  {
+    SpanWidth = 1024000;
+  }
+
   // Calculate fft size
   fft_size = SpanWidth / (span * 2);
 
@@ -1883,16 +1950,36 @@ void CalcSpan()    // takes centre frequency and span and calulates startfreq an
 
 
   // Set fft smoothing time
-  switch (span)
+  if (Range20dB == false)
   {
-    case 1000:                                            // 1 MHz
-      fft_time_smooth = 0.96;
-    break;
-    case 2000:                                            // 2 MHz
-      fft_time_smooth = 0.97;
-    break;
+    switch (span)
+    {
+      case 500:                                             // 500 kHz
+        fft_time_smooth = 0.96;
+      break;
+      case 1000:                                            // 1 MHz
+        fft_time_smooth = 0.96;
+      break;
+      case 2000:                                            // 2 MHz
+        fft_time_smooth = 0.97;
+      break;
+    }
   }
-
+  else  // 20 dB range so increase smoothing
+  {
+    switch (span)
+    {
+      case 500:                                             // 500 kHz
+        fft_time_smooth = 0.995;
+      break;
+      case 1000:                                            // 1 MHz
+        fft_time_smooth = 0.995;
+      break;
+      case 2000:                                            // 2 MHz
+        fft_time_smooth = 0.996;
+      break;
+    }
+  }
   // Set levelling time for NF Measurement
   ScansforLevel = 10;
 }
@@ -2022,6 +2109,13 @@ void *WaitButtonEvent(void * arg)
     printf("x=%d y=%d\n", rawX, rawY);
     FinishedButton = 1;
     i = IsMenuButtonPushed(rawX, rawY);
+
+    // Deal with Waveshare which quits back to Portsdown when touched
+    if (strcmp(DisplayType, "Waveshare") == 0)
+    {
+      cleanexit(129);
+    }
+
     if (i == -1)
     {
       continue;  //Pressed, but not on a button so wait for the next touch
@@ -2424,11 +2518,13 @@ void *WaitButtonEvent(void * arg)
         case 2:                                            // Classic SA Mode
           NFMeter = false;
           Range20dB = false;
+          CalcSpan();
           RedrawDisplay();
           break;
         case 3:                                            // Show 20 dB range
           NFMeter = false;
           Range20dB = true;
+          CalcSpan();
           RedrawDisplay();
           printf("20dB Menu 11 Requested\n");
           CurrentMenu = 11;
@@ -2499,9 +2595,9 @@ void *WaitButtonEvent(void * arg)
           UpdateWindow();
           freeze = false;
           break;
-        case 2:                                            // 1
-        case 3:                                            // 2
-        //case 4:                                            // 5
+        case 2:                                            // 500 kHz
+        case 3:                                            // 1 MHz
+        case 4:                                            // 2 MHz
         //case 5:                                            // 10
         //case 6:                                            // 10
         //case 7:                                            // 20
@@ -2756,6 +2852,7 @@ void *WaitButtonEvent(void * arg)
           break;
         case 2:                                            // Back to Full Range
           Range20dB = false;
+          CalcSpan();
           RedrawDisplay();
           CurrentMenu=1;
           UpdateWindow();
@@ -3167,16 +3264,16 @@ void Define_Menu6()                                           // Span Menu
   AddButtonStatus(button, " ", &Green);
 
   button = CreateButton(6, 2);
+  AddButtonStatus(button, "500 kHz", &Blue);
+  AddButtonStatus(button, "500 kHz", &Green);
+
+  button = CreateButton(6, 3);
   AddButtonStatus(button, "1 MHz", &Blue);
   AddButtonStatus(button, "1 MHz", &Green);
 
-  button = CreateButton(6, 3);
+  button = CreateButton(6, 4);
   AddButtonStatus(button, "2 MHz", &Blue);
   AddButtonStatus(button, "2 MHz", &Green);
-
-  //button = CreateButton(6, 4);
-  //AddButtonStatus(button, "5 MHz", &Blue);
-  //AddButtonStatus(button, "5 MHz", &Green);
 
   //button = CreateButton(6, 5);
   //AddButtonStatus(button, "10 MHz", &Blue);
@@ -3200,7 +3297,7 @@ void Define_Menu6()                                           // Span Menu
 
 void Start_Highlights_Menu6()
 {
-  if (span == 1000)
+  if (span == 500)
   {
     SetButtonStatus(ButtonNumber(CurrentMenu, 2), 1);
   }
@@ -3208,7 +3305,7 @@ void Start_Highlights_Menu6()
   {
     SetButtonStatus(ButtonNumber(CurrentMenu, 2), 0);
   }
-  if (span == 2000)
+  if (span == 1000)
   {
     SetButtonStatus(ButtonNumber(CurrentMenu, 3), 1);
   }
@@ -3216,14 +3313,14 @@ void Start_Highlights_Menu6()
   {
     SetButtonStatus(ButtonNumber(CurrentMenu, 3), 0);
   }
-  //if (span == 5000)
-  //{
-  //  SetButtonStatus(ButtonNumber(CurrentMenu, 4), 1);
-  //}
-  //else
-  //{
-  //  SetButtonStatus(ButtonNumber(CurrentMenu, 4), 0);
-  //}
+  if (span == 2000)
+  {
+    SetButtonStatus(ButtonNumber(CurrentMenu, 4), 1);
+  }
+  else
+  {
+    SetButtonStatus(ButtonNumber(CurrentMenu, 4), 0);
+  }
   //if (span == 10000)
   //{
   //  SetButtonStatus(ButtonNumber(CurrentMenu, 5), 1);
@@ -4268,6 +4365,7 @@ int main(void)
   int i;
   int pixel;
   int PeakValueZeroCounter = 0;
+  int nextwebupdate = 10;
 
   wfall = false;
 
@@ -4393,7 +4491,12 @@ int main(void)
 
     DrawSettings();     // Start, Stop RBW, Ref level and Title
 
-    UpdateWindow();     // Draw the buttons
+
+    // Draw the buttons if not Waveshare display
+    if (strcmp(DisplayType, "Waveshare") != 0)
+    {
+      UpdateWindow();     // Draw the buttons
+    }
 
     int NFScans = 0;
     int NFTotalCold = 0;
@@ -4516,6 +4619,13 @@ int main(void)
         }
       }
       tracecount++;
+      if (tracecount >= nextwebupdate)
+      {
+        // printf("tracecount = %d, Time ms = %llu \n", tracecount, monotonic_ms());
+        UpdateWeb();
+        usleep(10000);
+        nextwebupdate = tracecount + 90;  // About 820 ms between updates
+      }
       //printf("Tracecount = %d\n", tracecount);
     }
   }
