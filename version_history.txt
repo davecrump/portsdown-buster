@@ -1,3 +1,6 @@
+202301130
+Jetson and Power Meter updates from Portsdown 4
+
 202301110
 Correct RTL-SDR Bandviewer Span width
 Allow basic RTL-SDR Bandviewer with Waveshare Screen 
