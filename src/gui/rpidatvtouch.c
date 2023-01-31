@@ -181,9 +181,9 @@ char TabModeAudio[6][15]={"auto", "mic", "video", "bleeps", "no_audio", "webcam"
 char TabModeSTD[2][7]={"6","0"};
 char TabModeVidIP[2][7]={"0","1"};
 char TabModeOP[14][31]={"IQ", "QPSKRF", "DATVEXPRESS", "LIMEUSB", "STREAMER", "COMPVID", \
-  "DTX1", "IP", "LIMEMINI", "JLIME", "JEXPRESS", "EXPRESS2", "LIMEDVB", "PLUTO"};
+  "DTX1", "IP", "LIMEMINI", "JLIME", "JSTREAM", "EXPRESS2", "LIMEDVB", "PLUTO"};
 char TabModeOPtext[14][31]={"Portsdown", " Ugly ", "Express", "Lime USB", "BATC^Stream", "Comp Vid", \
-  " DTX1 ", "IPTS out", "Lime Mini", "Jetson^Lime", "Jetson^Express", "Express S2", "Lime DVB", "Pluto"};
+  " DTX1 ", "IPTS out", "Lime Mini", "Jetson^Lime", "Jetson^Stream", "Express S2", "Lime DVB", "Pluto"};
 char TabAtten[4][15] = {"NONE", "PE4312", "PE43713", "HMC1119"};
 char CurrentModeOP[31] = "QPSKRF";
 char CurrentModeOPtext[31] = " UGLY ";
@@ -1631,7 +1631,7 @@ void ReadModeInput(char coding[256], char vsource[256])
 
   // Correct Jetson modes if Jetson not selected
   printf ("Mode Output in ReadModeInput() is %s\n", ModeOutput);
-  if ((strcmp(ModeOutput, "JLIME") != 0) && (strcmp(ModeOutput, "JEXPRESS") != 0))
+  if ((strcmp(ModeOutput, "JLIME") != 0) && (strcmp(ModeOutput, "JSTREAM") != 0))
   {
     // If H265 encoding sflected, set Encoding to H264
     if (strcmp(CurrentEncoding, "H265") == 0)
@@ -1897,7 +1897,7 @@ void ReadModeInput(char coding[256], char vsource[256])
   }
 
   // Override all of the above for Jetson modes
-  if ((strcmp(ModeOutput, "JLIME") == 0) || (strcmp(ModeOutput, "JEXPRESS") == 0))
+  if ((strcmp(ModeOutput, "JLIME") == 0) || (strcmp(ModeOutput, "JSTREAM") == 0))
   {
     // Read format from config and set
     GetConfigParam(PATH_PCONFIG, "format", CurrentFormat);
@@ -2012,9 +2012,9 @@ void ReadModeOutput(char Moutput[256])
     strcpy(Moutput, "Jetson with Lime");
     strcpy(CurrentModeOPtext, TabModeOPtext[9]);
   } 
-  else if (strcmp(ModeOutput, "JEXPRESS") == 0) 
+  else if (strcmp(ModeOutput, "JSTREAM") == 0) 
   {
-    strcpy(Moutput, "Jetson with DATV Express");
+    strcpy(Moutput, "Jetson Streaming");
     strcpy(CurrentModeOPtext, TabModeOPtext[10]);
   } 
   else if (strcmp(ModeOutput, "LIMEDVB") == 0) 
@@ -5766,7 +5766,7 @@ void ApplyTXConfig()
   {
     strcpy(ModeInput, "CARRIER");
   }
-  else if ((strcmp(CurrentModeOP, "JLIME") == 0) || (strcmp(CurrentModeOP, "JEXPRESS") == 0))
+  else if ((strcmp(CurrentModeOP, "JLIME") == 0) || (strcmp(CurrentModeOP, "JSTREAM") == 0))
   {
     if (strcmp(CurrentSource, "HDMI") == 0)
     {
@@ -6101,7 +6101,7 @@ void EnforceValidTXMode()
        && (strcmp(CurrentModeOP, "COMPVID") != 0)
        && (strcmp(CurrentModeOP, "IP") != 0)
        && (strcmp(CurrentModeOP, "JLIME") != 0)
-       && (strcmp(CurrentModeOP, "JEXPRESS") != 0)) // not DVB-S2-capable
+       && (strcmp(CurrentModeOP, "JSTREAM") != 0)) // not DVB-S2-capable
   {
     if ((strcmp(CurrentTXMode, TabTXMode[0]) != 0) && (strcmp(CurrentTXMode, TabTXMode[1]) != 0)
      && (strcmp(CurrentTXMode, TabTXMode[6]) != 0))  // Not DVB-S DVB-T and Carrier
@@ -6292,7 +6292,7 @@ void GreyOut1()
         SetButtonStatus(ButtonNumber(CurrentMenu, 6), 0); // Caption
         SetButtonStatus(ButtonNumber(CurrentMenu, 5), 0); // EasyCap
       }
-      if ((strcmp(CurrentEncoding, "MPEG-2") == 0) || (strcmp(CurrentEncoding, "H264") == 0))
+      if ((strcmp(CurrentEncoding, "MPEG-2") == 0) || (strcmp(CurrentEncoding, "H264") == 0) || (strcmp(CurrentEncoding, "H265") == 0))
       {
         SetButtonStatus(ButtonNumber(CurrentMenu, 7), 0); // Blue/Green Audio
       }
@@ -6373,7 +6373,7 @@ void GreyOut11()
    && (strcmp(CurrentModeOP, "COMPVID") != 0)
    && (strcmp(CurrentModeOP, "IP") != 0)
    && (strcmp(CurrentModeOP, "JLIME") != 0)
-   && (strcmp(CurrentModeOP, "JEXPRESS") != 0)) // not DVB-S2-capable
+   && (strcmp(CurrentModeOP, "JSTREAM") != 0)) // not DVB-S2-capable
   {
     SetButtonStatus(ButtonNumber(CurrentMenu, 0), 2); // grey-out S2 QPSK
     SetButtonStatus(ButtonNumber(CurrentMenu, 1), 2); // grey-out 8PSK
@@ -6517,7 +6517,7 @@ void GreyOut44()
 
 void GreyOut45()
 {
-  if ((strcmp(CurrentModeOP, "JLIME") == 0) || (strcmp(CurrentModeOP, "JEXPRESS") == 0)) // Jetson
+  if ((strcmp(CurrentModeOP, "JLIME") == 0) || (strcmp(CurrentModeOP, "JSTREAM") == 0)) // Jetson
   {
     SetButtonStatus(ButtonNumber(CurrentMenu, 0), 2); // Contest
     SetButtonStatus(ButtonNumber(CurrentMenu, 2), 2); // C920 Raw
@@ -17235,6 +17235,10 @@ void waituntil(int w,int h)
           SelectOP(i);
           printf("Jetson Lime\n");
           break;
+        case 11:                              // Jetson Stream
+          SelectOP(i);
+          printf("Jetson Stream\n");
+          break;
         case 13:                              // Lime Mini FPGA
           SelectOP(i);
           printf("Lime FPGA\n");
@@ -18171,6 +18175,10 @@ void Start_Highlights_Menu1()
   else if (strcmp(CurrentModeOPtext, "Jetson^Lime") == 0)
   {
     strcpy(Outputtext, "Output to^Jtsn Lime");
+  }
+  else if (strcmp(CurrentModeOPtext, "Jetson^Stream") == 0)
+  {
+    strcpy(Outputtext, "Output to^Jtsn Strm");
   }
   else
   {
@@ -21679,6 +21687,11 @@ void Define_Menu42()
   AddButtonStatus(button, TabModeOPtext[9], &Green);
   AddButtonStatus(button, TabModeOPtext[9], &Grey);
 
+  button = CreateButton(42, 11);
+  AddButtonStatus(button, TabModeOPtext[10], &Blue);
+  AddButtonStatus(button, TabModeOPtext[10], &Green);
+  AddButtonStatus(button, TabModeOPtext[10], &Grey);
+
   button = CreateButton(42, 13);
   AddButtonStatus(button, TabModeOPtext[12], &Blue);
   AddButtonStatus(button, TabModeOPtext[12], &Green);
@@ -21737,6 +21750,11 @@ void Start_Highlights_Menu42()
   {
     SelectInGroupOnMenu(42, 5, 14, 10, 1);
     SelectInGroupOnMenu(42, 0, 3, 10, 1);
+  }
+  if(strcmp(CurrentModeOP, TabModeOP[10]) == 0)  //JSTREAM
+  {
+    SelectInGroupOnMenu(42, 5, 14, 11, 1);
+    SelectInGroupOnMenu(42, 0, 3, 11, 1);
   }
   if(strcmp(CurrentModeOP, TabModeOP[12]) == 0)  //LIME DVB
   {
