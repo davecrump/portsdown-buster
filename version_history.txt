@@ -1,3 +1,6 @@
+202302040
+Improve Jetson TX off Switching
+
 202301310
 Jetson Updates for ATEM Mini H265
 
