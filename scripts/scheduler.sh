@@ -50,6 +50,7 @@ EOF
 # 139  Exit from rpidatvgui requesting start of Sweeper
 # 140  Exit from rpidatvgui requesting start of Airspy BandViewer
 # 141  Exit from rpidatvgui requesting start of RTL-SDR BandViewer
+# 147  Exit from rpidatvgui requesting start of Noise Meter
 # 160  Shutdown from GUI
 # 192  Reboot from GUI
 # 193  Rotate 7 inch and reboot
@@ -139,6 +140,10 @@ while [ "$GUI_RETURN_CODE" -gt 127 ] || [ "$GUI_RETURN_CODE" -eq 0 ];  do
     141)
       sleep 1
       /home/pi/rpidatv/bin/rtlsdrview
+      GUI_RETURN_CODE="$?"
+    ;;
+    147)
+      /home/pi/rpidatv/bin/noise_meter
       GUI_RETURN_CODE="$?"
     ;;
     160)

@@ -60,6 +60,8 @@
 #define STATUS_ERRORS_BCH_UNCORRECTED   23
 #define STATUS_LNB_SUPPLY         24
 #define STATUS_LNB_POLARISATION_H 25
+#define STATUS_AGC1_GAIN          26
+#define STATUS_AGC2_GAIN          27
 
 /* The number of constellation peeks we do for each background loop */
 #define NUM_CONSTELLATIONS 16
@@ -69,10 +71,12 @@
 typedef struct {
     bool port_swap;
     uint8_t port;
+    float halfscan_ratio;
     uint8_t freq_index;
     uint8_t sr_index;
     uint32_t freq_requested[4];
     uint32_t sr_requested[4];
+    uint8_t search_algorithm;
     bool beep_enabled;
 
     uint8_t device_usb_bus;
@@ -103,6 +107,8 @@ typedef struct {
     uint8_t demod_state;
     bool lna_ok;
     uint16_t lna_gain;
+    uint16_t agc1_gain;
+    uint16_t agc2_gain;
     uint8_t power_i;
     uint8_t power_q;
     uint32_t frequency_requested;
@@ -113,7 +119,7 @@ typedef struct {
     uint32_t symbolrate;
     uint32_t viterbi_error_rate; // DVB-S1
     uint32_t bit_error_rate; // DVB-S2
-    uint32_t modulation_error_rate; // DVB-S2
+    int32_t modulation_error_rate; // DVB-S2
     bool errors_bch_uncorrected;
     uint32_t errors_bch_count;
     uint32_t errors_ldpc_count;
