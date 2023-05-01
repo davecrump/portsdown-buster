@@ -708,7 +708,7 @@ void GetIPAddr(char IPAddress[256])
   }
 
   /* Read the output a line at a time - output it. */
-  while (fgets(IPAddress, 16, fp) != NULL)
+  while (fgets(IPAddress, 17, fp) != NULL)
   {
     //printf("%s", IPAddress);
   }
@@ -736,7 +736,7 @@ void GetIPAddr2(char IPAddress[256])
   }
 
   /* Read the output a line at a time - output it. */
-  while (fgets(IPAddress, 16, fp) != NULL)
+  while (fgets(IPAddress, 17, fp) != NULL)
   {
     //printf("%s", IPAddress);
   }
@@ -6715,6 +6715,17 @@ void SelectOP(int NoButton)      // Output device
   {
     StartExpressServer();
   }
+
+  // Enable Video Output on LimeNET Micro if required
+  if ((strcmp(CurrentModeOP, TabModeOP[5]) == 0) && (LimeNETMicroDet == 1)) // Video out on LimeNET Micro
+  {
+    system("/home/pi/raspi2raspi/build/raspi2raspi --fps 25 &");
+  }
+  else
+  {
+    system("sudo killall raspi2raspi >/dev/null 2>/dev/null");
+  }
+
   EnforceValidTXMode();
   EnforceValidFEC();
 
@@ -7760,18 +7771,13 @@ void CompVidStart()
       {
         strcpy(bashcmd, "v4l2-ctl -d ");
         strcat(bashcmd, picamdev1);
-        strcat(bashcmd, " --set-fmt-overlay=left=0,top=0,width=736,height=416 --overlay=1");
-
-        //system("v4l2-ctl -d /dev/video0 --set-fmt-overlay=left=0,top=0,width=736,height=416 --overlay=1");
-        //system("v4l2-ctl -d /dev/video1 --set-fmt-overlay=left=0,top=0,width=736,height=416 --overlay=1");
+        strcat(bashcmd, " --set-fmt-overlay=left=0,top=0,width=736,height=540 --overlay=1");
       }
       else  // 3.5 inch screen
       {
         strcpy(bashcmd, "v4l2-ctl -d ");
         strcat(bashcmd, picamdev1);
         strcat(bashcmd, " --set-fmt-overlay=left=0,top=0,width=656,height=512 --overlay=1");
-        //system("v4l2-ctl -d /dev/video0 --set-fmt-overlay=left=0,top=0,width=656,height=512 --overlay=1");
-        //system("v4l2-ctl -d /dev/video1 --set-fmt-overlay=left=0,top=0,width=656,height=512 --overlay=1");
       }
       system(bashcmd);
       strcpy(ScreenState, "VideoOut");
@@ -7780,8 +7786,6 @@ void CompVidStart()
       strcat(bashcmd, picamdev1);
       strcat(bashcmd, " --overlay=0");
       system(bashcmd);
-      //system("v4l2-ctl -d /dev/video0 --overlay=0");
-      //system("v4l2-ctl -d /dev/video1 --overlay=0");
     }
     else
     {
@@ -9691,6 +9695,9 @@ void LMRX(int NoButton)
               case 36:
                 strcpy(VidEncodingtext, "H265");
               break;
+              case 51:
+                strcpy(VidEncodingtext, "H266");
+              break;
               default:
                 printf("New Encoding Code = %d\n", EncodingCode);
               break;
@@ -10149,6 +10156,9 @@ void LMRX(int NoButton)
               case 36:
                 strcpy(VidEncodingtext, "H265");
               break;
+              case 51:
+                strcpy(VidEncodingtext, "H266");
+              break;
               default:
                 printf("New Encoding Code = %d\n", EncodingCode);
               break;
@@ -10532,6 +10542,9 @@ void LMRX(int NoButton)
               break;
               case 36:
                 strcpy(VidEncodingtext, "H265");
+              break;
+              case 51:
+                strcpy(VidEncodingtext, "H266");
               break;
               default:
                 printf("New Encoding Code = %d\n", EncodingCode);
@@ -10920,6 +10933,9 @@ void LMRX(int NoButton)
               break;
               case 36:
                 strcpy(VidEncodingtext, "H265");
+              break;
+              case 51:
+                strcpy(VidEncodingtext, "H266");
               break;
               default:
                 printf("New Encoding Code = %d\n", EncodingCode);
@@ -15569,6 +15585,28 @@ void waituntil(int w,int h)
           BackgroundRGB(0, 0, 0, 255);
           UpdateWindow();
           break;
+        case 8:                                                 // Noise Meter
+          if (strcmp(DisplayType, "Element14_7") == 0) // 7 inch screen
+          {
+            if((CheckLimeMiniConnect() == 0) || (CheckLimeUSBConnect() == 0))
+            {
+              DisplayLogo();
+              cleanexit(147);
+            }
+            else
+            {
+              MsgBox("No LimeSDR Connected");
+              wait_touch();
+            }
+          }
+          else
+          {
+            MsgBox("7 Inch Screen Required");
+            wait_touch();
+          }
+          BackgroundRGB(0, 0, 0, 255);
+          UpdateWindow();
+          break;
         case 9:                                       // Video Snap
           do_snap();
           UpdateWindow();
@@ -18958,6 +18996,9 @@ void Define_Menu7()
   button = CreateButton(7, 5);
   AddButtonStatus(button, "Frequency^Sweeper", &Blue);
   AddButtonStatus(button, " ", &Green);
+
+  button = CreateButton(7, 8);
+  AddButtonStatus(button, "Noise^Meter", &Blue);
 
   button = CreateButton(7, 9);
   AddButtonStatus(button, "Video^Snap", &Blue);
@@ -22637,6 +22678,12 @@ int main(int argc, char **argv)
 
   // Check for LimeNET Micro
   LimeNETMicroDet = DetectLimeNETMicro();
+
+  // Enable Video Output on LimeNET Micro if required
+  if ((strcmp(CurrentModeOP, TabModeOP[5]) == 0) && (LimeNETMicroDet == 1)) // Video out on LimeNET Micro
+  {
+    system("/home/pi/raspi2raspi/build/raspi2raspi --fps 25 &");
+  }
 
   // Set the Band (and filter) Switching
   // Must be done after (not before) starting DATV Express Server

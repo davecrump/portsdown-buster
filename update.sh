@@ -502,6 +502,16 @@ make
 cp nf_meter ../../bin/
 cd /home/pi
 
+# Compile Noise Meter
+echo
+echo "---------------------------------"
+echo "----- Compiling Noise Meter -----"
+echo "---------------------------------"
+cd /home/pi/rpidatv/src/noise_meter
+make
+cp noise_meter ../../bin/
+cd /home/pi
+
 # Check if raspi2png needs to be installed (202004300)
 if [ ! -f "/usr/bin/raspi2png" ]; then
   echo "Installing raspi2png"
