@@ -208,6 +208,9 @@ echo "--------------------------------------------"
 cd /home/pi/avc2ts
 git clone https://github.com/F5OEO/libmpegts
 cd libmpegts
+# Overwrite updated config version files 202307180
+cp /home/pi/rpidatv/scripts/configs/config.guess config.guess
+cp /home/pi/rpidatv/scripts/configs/config.sub config.sub
 ./configure
 make
 cd ../
@@ -216,6 +219,9 @@ cd ../
 sudo apt-get -y install autoconf libtool
 git clone https://github.com/mstorsjo/fdk-aac
 cd fdk-aac
+# Overwrite updated config version files 202307180
+cp /home/pi/rpidatv/scripts/configs/config.guess config.guess
+cp /home/pi/rpidatv/scripts/configs/config.sub config.sub
 ./autogen.sh
 ./configure
 make && sudo make install
