@@ -153,7 +153,7 @@ void *fft_thread(void *arg)
                 pt[0] = fft_out[i - FFT_SIZE / 2][0] / FFT_SIZE;
                 pt[1] = fft_out[i - FFT_SIZE / 2][1] / FFT_SIZE;
             }
-            pwr = pwr_scale * (pt[0] * pt[0]) + (pt[1] * pt[1]);
+            pwr = pwr_scale * ((pt[0] * pt[0]) + (pt[1] * pt[1]));
             lpwr = 10.f * log10(pwr + 1.0e-20);
 
             fft_data_staging[i] = (lpwr * (1.f - FFT_TIME_SMOOTH)) + (fft_data_staging[i] * FFT_TIME_SMOOTH);
@@ -164,7 +164,7 @@ void *fft_thread(void *arg)
               //printf("%f\n", fft_data_staging[i]);
 
               fft_scaled_data[i] = 20 * (fft_data_staging[i] + 68);
-              //fft_scaled_data[i] = 20 * (fft_data_staging[i] + 78);
+              //fft_scaled_data[i] = 20 * (fft_data_staging[i] + 148);
 
               //if(fft_scaled_data[i] > int_max) int_max = fft_scaled_data[i];
               //if(fft_scaled_data[i] < int_min) int_min = fft_scaled_data[i];
@@ -177,7 +177,7 @@ void *fft_thread(void *arg)
             else   // Standard Spectrum plot
             {
               // Set the scaling and vertical offset
-              fft_scaled_data[i] = 5 * (fft_data_staging[i] + 88);
+              fft_scaled_data[i] = 5 * (fft_data_staging[i] + 140); // was 88
 
               // Apply some time smoothing if not NF Measuring
 
