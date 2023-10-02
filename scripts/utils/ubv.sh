@@ -20,4 +20,6 @@ fi
 cp bandview /home/pi/rpidatv/bin/bandview
 cd /home/pi
 
+/home/pi/rpidatv/bin/bandview
+
 exit

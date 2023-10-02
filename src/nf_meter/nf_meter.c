@@ -4137,7 +4137,7 @@ int main(void)
 
       // Display On Power Level
       rectangle(100, 120, 250, 22, 0, 0, 0);  // Blank area
-      snprintf(NFText, 20, "Noise on %0.1f dB", Avlpwrhot + 20.0);
+      snprintf(NFText, 20, "Noise on %0.1f dB", Avlpwrhot + 65.0);  // was 20
       setBackColour(0, 0, 0);
       pthread_mutex_lock(&text_lock);
       Text2(100, 125, NFText, &font_dejavu_sans_18);
@@ -4145,7 +4145,7 @@ int main(void)
 
       // Display Off Power Level
       rectangle(100, 90, 250, 22, 0, 0, 0);  // Blank area
-      snprintf(NFText, 20, "Noise off %0.1f dB", Avlpwrcold + 20.0);
+      snprintf(NFText, 20, "Noise off %0.1f dB", Avlpwrcold + 65.0);
       setBackColour(0, 0, 0);
       pthread_mutex_lock(&text_lock);
       if (Avlpwrcold + 20.0 < -65.0)
@@ -4156,7 +4156,7 @@ int main(void)
       setForeColour(255, 255, 255);
       pthread_mutex_unlock(&text_lock);
       rectangle(300, 90, 250, 22, 0, 0, 0);  // Blank area
-      if (Avlpwrcold + 20.0 < -65.0)
+      if (Avlpwrcold + 65.0 < -65.0)
       {
         pthread_mutex_lock(&text_lock);
         Text2(300, 95, "Increase Lime Gain", &font_dejavu_sans_18);

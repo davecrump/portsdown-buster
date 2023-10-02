@@ -124,7 +124,7 @@ int pfreq3 = 748000;
 int pfreq4 = 1255000;
 int pfreq5 = 2409000;
 
-float MAIN_SPECTRUM_TIME_SMOOTH;
+//float MAIN_SPECTRUM_TIME_SMOOTH;
 
 int markerx = 250;
 int markery = 15;
@@ -1874,32 +1874,21 @@ void CalcSpan()    // takes centre frequency and span and calulates startfreq an
 
   printf("fft size calculated as %d\n", fft_size);
 
-
   // Set fft smoothing time
   switch (span)
   {
     case 1000:                                            // 1 MHz
-      fft_time_smooth = 0.996;
+      fft_time_smooth = 0.990;
     break;
     case 2000:                                            // 2 MHz
-      fft_time_smooth = 0.998;
+      fft_time_smooth = 0.994;
     break;
     case 5000:                                            // 5 MHz
-      fft_time_smooth = 0.9985;
+      fft_time_smooth = 0.995;
     break;
     case 10000:                                           // 10 MHz
-      fft_time_smooth = 0.999;
+      fft_time_smooth = 0.995;
     break;
-  }
-
-  // set a sensible time constant for the fft display
-  if (bandwidth >= 2048000)
-  {
-    MAIN_SPECTRUM_TIME_SMOOTH =  0.98;
-  }
-  else
-  {
-    MAIN_SPECTRUM_TIME_SMOOTH =  0.90;
   }
 
   // Set levelling time for NF Measurement
