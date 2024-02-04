@@ -262,7 +262,7 @@ char LMRXinput[2];          // Input a or b
 char LMRXudpip[20];         // UDP IP address
 char LMRXudpport[10];       // UDP IP port
 char LMRXmode[10];          // sat or terr
-char LMRXaudio[15];         // rpi or usb
+char LMRXaudio[15];         // rpi or usb or hdmi
 char LMRXvolts[7];          // off, v or h             
 
 // LongMynd RX Received Parameters for display
@@ -3381,7 +3381,7 @@ void ReadLMRXPresets()
   // UDP output port:
   GetConfigParam(PATH_LMCONFIG, "udpport", LMRXudpport);
 
-  // Audio output port: (rpi or usb)
+  // Audio output port: (rpi or usb or hdmi)
   GetConfigParam(PATH_LMCONFIG, "audio", LMRXaudio);
 
   // QO-100 LNB Offset:
@@ -15048,10 +15048,14 @@ void waituntil(int w,int h)
           Start_Highlights_Menu35();
           UpdateWindow();
           break;
-        case 13:                               // Set Default Adio Out
+        case 13:                               // Set Default Audio Out
           if (strcmp(LMRXaudio, "rpi") == 0)
           {
             strcpy(LMRXaudio, "usb");
+          }
+          else if (strcmp(LMRXaudio, "usb") == 0)
+          {
+            strcpy(LMRXaudio, "hdmi");
           }
           else
           {
@@ -17706,6 +17710,10 @@ void waituntil(int w,int h)
           {
             strcpy(LMRXaudio, "usb");
           }
+          else if (strcmp(LMRXaudio, "usb") == 0)
+          {
+            strcpy(LMRXaudio, "hdmi");
+          }
           else
           {
             strcpy(LMRXaudio, "rpi");
@@ -18424,11 +18432,16 @@ void Start_Highlights_Menu3()
   {
     AmendButtonStatus(ButtonNumber(3, 13), 0, "Audio out^RPi Jack", &Blue);
   }
-  else
+  else if (strcmp(LMRXaudio, "usb") == 0)
   {
     AmendButtonStatus(ButtonNumber(3, 13), 0, "Audio out^USB dongle", &Blue);
   }
+  else
+  {
+    AmendButtonStatus(ButtonNumber(3, 13), 0, "Audio out^HDMI", &Blue);
+  }
 }
+
 
 void Define_Menu4()
 {
@@ -22196,12 +22209,15 @@ void Start_Highlights_Menu46()
   {
     AmendButtonStatus(ButtonNumber(46, 9), 0, "Audio out^RPi Jack", &Blue);
   }
-  else
+  else if (strcmp(LMRXaudio, "usb") == 0)
   {
     AmendButtonStatus(ButtonNumber(46, 9), 0, "Audio out^USB dongle", &Blue);
   }
+  else
+  {
+    AmendButtonStatus(ButtonNumber(46, 9), 0, "Audio out^HDMI", &Blue);
+  }
 }
-
 
 
 void Define_Menu41()
