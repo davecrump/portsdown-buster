@@ -1,3 +1,6 @@
+202405130
+Correct behaviour on deselection of carrier TX mode
+
 202402040
 Allow selection of HDMI audio output for RX with Waveshare screen
 
