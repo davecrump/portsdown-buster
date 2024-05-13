@@ -6615,6 +6615,10 @@ void SelectInGroupOnMenu(int Menu, int StartButton, int StopButton, int NumberBu
 
 void SelectTX(int NoButton)  // TX RF Output Mode
 {
+  char Value[255];
+  char vcoding[255];
+  char vsource[255];
+
   SelectInGroupOnMenu(CurrentMenu, 5, 7, NoButton, 1);
   SelectInGroupOnMenu(CurrentMenu, 0, 3, NoButton, 1);
   if (NoButton == 7) // DVB-T
@@ -6635,6 +6639,15 @@ void SelectTX(int NoButton)  // TX RF Output Mode
   strcpy(CurrentTXMode, TabTXMode[NoButton]);
   char Param[15]="modulation";
   SetConfigParam(PATH_PCONFIG, Param, CurrentTXMode);
+
+  // Handle possible lock-up on exit from carrier mode when modeinput is set to CARRIER
+  GetConfigParam(PATH_PCONFIG, "modeinput", Value);
+  if ((strcmp(CurrentTXMode, "Carrier") != 0) && (strcmp(Value, "CARRIER") == 0))
+  {
+    SetConfigParam(PATH_PCONFIG, "modeinput", "CARDH264");
+    ReadModeInput(vcoding, vsource);
+  }
+
   EnforceValidTXMode();
   EnforceValidFEC();
   ApplyTXConfig();

@@ -3313,6 +3313,7 @@ void *WaitButtonEvent(void * arg)
           break;
         case 2:                                            // Back to Full Range
           Range20dB = false;
+          SetConfigParam(PATH_CONFIG, "mode", "spectrum");
           CalcSpan();
           RedrawDisplay();
           CurrentMenu=1;
