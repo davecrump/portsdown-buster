@@ -523,6 +523,16 @@ make
 cp noise_meter ../../bin/
 cd /home/pi
 
+# Compile Sweeper
+echo
+echo "---------------------------------------"
+echo "----- Compiling Frequency Sweeper -----"
+echo "---------------------------------------"
+cd /home/pi/rpidatv/src/sweeper
+make
+cp sweeper ../../bin/
+cd /home/pi
+
 # Check if raspi2png needs to be installed (202004300)
 if [ ! -f "/usr/bin/raspi2png" ]; then
   echo "Installing raspi2png"
