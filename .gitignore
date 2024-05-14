@@ -56,5 +56,9 @@ src/tstools/
 src/dvb_t_stack/Release/dvb_t_stack
 src/rtlsdrview/rtlsdrview
 src/bandview/bandview
+src/airspyview/airspyview
+src/nf_meter/nf_meter
+src/noise_meter/noise_meter
+src/sweeper/sweeper
 bin/*
 

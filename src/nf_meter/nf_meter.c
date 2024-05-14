@@ -3743,8 +3743,8 @@ void Draw5MeterLabels(float LH_Value, float RH_Value)
 
   rectangle(351, 432, 40, 30, 0, 0, 0);
   rectangle(378, 454, 40, 25, 0, 0, 0);
-  rectangle(430, 465, 40, 15, 0, 0, 0);
-  rectangle(482, 465, 40, 15, 0, 0, 0);
+  rectangle(430, 463, 40, 15, 0, 0, 0);
+  rectangle(482, 463, 40, 15, 0, 0, 0);
   rectangle(532, 454, 40, 25, 0, 0, 0);
   rectangle(575, 432, 40, 30, 0, 0, 0);
 
@@ -3760,12 +3760,12 @@ void Draw5MeterLabels(float LH_Value, float RH_Value)
 
     snprintf(labeltext, 14, "%d", (int)(LH_Value + 2 * (RH_Value -LH_Value) / 5));
     pthread_mutex_lock(&text_lock);
-    TextMid2(448, 465, labeltext, font_ptr);
+    TextMid2(448, 463, labeltext, font_ptr);
     pthread_mutex_unlock(&text_lock);
 
     snprintf(labeltext, 14, "%d", (int)(LH_Value + 3 * (RH_Value -LH_Value) / 5));
     pthread_mutex_lock(&text_lock);
-    TextMid2(500, 465, labeltext, font_ptr);
+    TextMid2(500, 463, labeltext, font_ptr);
     pthread_mutex_unlock(&text_lock);
 
     snprintf(labeltext, 14, "%d", (int)(LH_Value + 4 * (RH_Value -LH_Value) / 5));

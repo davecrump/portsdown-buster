@@ -1,3 +1,6 @@
+202405141
+Improve graphics error checking in test equipment
+
 202405140
 Tidy pinning of VLC to reduce update duration
 
