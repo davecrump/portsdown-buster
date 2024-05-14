@@ -1,3 +1,6 @@
+202405140
+Tidy pinning of VLC to reduce update duration
+
 202405130
 Correct behaviour on deselection of carrier TX mode
 
