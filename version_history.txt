@@ -1,3 +1,7 @@
+202406180
+Front panel gain control for Lime BandViewer
+Change contest card layout
+
 202405142
 Install Frequency Sweeper
 
