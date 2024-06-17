@@ -21237,7 +21237,23 @@ void Define_Menu31()
 
 void Start_Highlights_Menu31()
 {
-  //
+  int i;
+  int j;
+  char Param[15];
+  char DispName[10][20];
+
+  for(i = 0; i < 10 ;i++)
+  {
+    sprintf(Param, "bcallsign%d", i);
+    GetConfigParam(PATH_LOCATORS, Param, DispName[i]);
+    DispName[i][8] = '\0';
+    j = i + 5;
+    if (i > 4)
+    {
+      j = i - 5;
+    }
+    AmendButtonStatus(ButtonNumber(31, j), 0, DispName[i], &Blue);
+  }
 }
 
 void Define_Menu32()
