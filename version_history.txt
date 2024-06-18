@@ -1,3 +1,6 @@
+202406181
+Operate Lime PTT immediately when transmission starts, rather than waiting for preset delay
+
 202406180
 Front panel gain control for Lime BandViewer
 Change contest card layout
