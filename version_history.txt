@@ -1,3 +1,6 @@
+202512150
+Amend the sources.list to legacy
+
 202406181
 Operate Lime PTT immediately when transmission starts, rather than waiting for preset delay
 
