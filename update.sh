@@ -161,6 +161,9 @@ cp -f -r "$PATHSCRIPT"/TXstopextras.sh "$PATHUBACKUP"/TXstopextras.sh
 
 DisplayUpdateMsg "Step 4 of 10\nUpdating Software Packages\n\nXXXX------"
 
+# Amend the sources.list to legacy
+sudo bash -c 'echo -e "deb http://legacy.raspbian.org/raspbian/ buster main contrib non-free rpi" > /etc/apt/sources.list' 
+
 # Ensure that the correct version of VLC is being used
 cd /home/pi
 rm vlc* >/dev/null 2>/dev/null                               # Clean up previous downloads
